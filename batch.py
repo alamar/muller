@@ -5,11 +5,12 @@ from pylab import *
 
 from copy import *
 
-import commands
+# import commands
+import subprocess
 
 import time
 
-import os
+import os, sys
 
 # Muller's ratchet in finite population, genes have "good" and "bad" states (1 or 0),
 # fitness is (1 + fb) ** E, where E is number of good genes
@@ -107,7 +108,13 @@ class population:
         if steps:
             self.steps = steps
         #commandline = 
-        self.output = commands.getoutput("nice -n 19 ./muller " + str(self.steps) + self.paramline + str(self.interval))
+        command = "nice -n 19 ./muller "
+        if sys.platform == "win32":
+            command = "muller.exe "
+            # print "qqq!!11\n"
+        # print command + str(self.steps) + self.paramline + str(self.interval)
+        self.output = subprocess.check_output(command + str(self.steps) + self.paramline + str(self.interval))
+        # print self.output + "\n"
         if self.verbose:
             print self.output
         self.readstat()
