@@ -5,7 +5,7 @@ from pylab import *
 
 from copy import *
 
-# import commands
+import commands
 import subprocess
 
 import time
@@ -33,7 +33,7 @@ import os, sys
 
 class population:
     
-    def __init__(self, steps = 200, N = 100, G = 100, M = 0.015, B = 0.1, fb = 0.05, C = 0., T = 0., Tmut = 0., Mmut = 0., Ttransform = 1., interval = 1, verbose = False):
+    def __init__(self, steps = 200, N = 100, G = 100, M = 0.015, B = 0.1, fb = 0.05, T = 0., Tmut = 0., Mmut = 0., Ttransform = 1., C = 0., Binitial = -1., interval = 1, verbose = False):
         
         # C and seed is not implemented yet!
         
@@ -46,13 +46,13 @@ class population:
         self.M = M
         self.B = B
         self.fb = fb
-        self.C = C
         self.T = T
         self.Tmut = Tmut
         self.Mmut = Mmut
         self.Ttransform = Ttransform
+        self.C = C
         
-        self.paramline = " {} {} {} {} {} {} {} {} {} ".format(N, G, B, fb, M, Mmut, T, Tmut, Ttransform)
+        self.paramline = " {} {} {} {} {} {} {} {} {} {} {} ".format(N, G, B, fb, M, Mmut, T, Tmut, Ttransform, C, Binitial)
         #self.paramline = " " + N +  " " + G + " " + B + " " + fb + " " + M + " " + Mmut + " " + T + " " + Tmut + " " + Ttransform + " "
         #commandline = "./cpp_gpg " + paramline
         #self.run()
@@ -108,13 +108,14 @@ class population:
         if steps:
             self.steps = steps
         #commandline = 
+        print self.paramline
         command = "nice -n 19 ./muller "
         if sys.platform == "win32":
             command = "muller.exe "
-            # print "qqq!!11\n"
-        # print command + str(self.steps) + self.paramline + str(self.interval)
-        self.output = subprocess.check_output(command + str(self.steps) + self.paramline + str(self.interval))
-        # print self.output + "\n"
+            self.output = subprocess.check_output(command + str(self.steps) + self.paramline + str(self.interval))
+        else:
+            command = "nice -n 19 ./muller "
+            self.output = commands.getoutput(command + str(self.steps) + self.paramline + str(self.interval))
         if self.verbose:
             print self.output
         self.readstat()

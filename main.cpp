@@ -45,6 +45,7 @@ public:
     real T; // transformation probability
     real Tmut; // transformation probability mutation
     bool Ttransform; // transformation of transformation/mutation genes
+    real C; // cost of transformation
     
     int E; // calculated number of good genes
     real F; // calculated fitness
@@ -54,7 +55,7 @@ public:
     void copy_from(Organism * donor);
     void calc_fitness();
     
-    Organism(int _G, real _B, real _fb, real _M, real _Mmut, real _T, real _Tmut, bool _Ttransform);
+    Organism(int _G, real _B, real _fb, real _M, real _Mmut, real _T, real _Tmut, bool _Ttransform, real _C, real _Binitial);
 };
 
 void Organism::mutate(){
@@ -145,6 +146,8 @@ void Organism::copy_from(Organism * donor){
     Mmut = donor->Mmut;
     T = donor->T;
     Tmut = donor->Tmut;
+    Ttransform = donor->Ttransform;
+    C = donor->C;
     
     E = donor->E;
     F = donor->F;
@@ -158,9 +161,10 @@ void Organism::calc_fitness(){
     };
     
     F = pow((1 - fb), (G - E)); // multiplicative fitness, maximum fitness is always 1
+    if (T > 0.) F = F * (1 - C);
 };
 
-Organism::Organism(int _G, real _B, real _fb, real _M, real _Mmut, real _T, real _Tmut, bool _Ttransform){
+Organism::Organism(int _G, real _B, real _fb, real _M, real _Mmut, real _T, real _Tmut, bool _Ttransform, real _C, real _Binitial){
     
     G = _G;
     B = _B;
@@ -170,11 +174,14 @@ Organism::Organism(int _G, real _B, real _fb, real _M, real _Mmut, real _T, real
     T = _T;
     Tmut = _Tmut;
     Ttransform = _Ttransform;
+    C = _C;
     
     genes = new bool[G];
     M = 1.;
+    B = _Binitial;
     mutate();
     M = _M;
+    B = _B;
 }
 
 class World {
@@ -191,6 +198,8 @@ public:
     real T; // initial transformation probability
     real Tmut; // initial transformation probability mutation
     bool Ttransform; // transformation of transformation/mutation genes
+    real C; // cost of transformation
+    real Binitial; // initial content of beneficial genes
     
     Organism ** pop; // population
     
@@ -201,7 +210,7 @@ public:
     void run(int steps, int interval);
     
     // void init(int _N, int _G, real _B, real _fb, real _M, real _Mmut, real _T, real _Tmut);
-    World(int _N, int _G, real _B, real _fb, real _M, real _Mmut, real _T, real _Tmut, bool _Ttransform);
+    World(int _N, int _G, real _B, real _fb, real _M, real _Mmut, real _T, real _Tmut, bool _Ttransform, real _C, real _Binitial);
     
     // statistics
     
@@ -393,7 +402,7 @@ void World::write_header(){
     "\n";
 }
 
-World::World(int _N, int _G, real _B, real _fb, real _M, real _Mmut, real _T, real _Tmut, bool _Ttransform){
+World::World(int _N, int _G, real _B, real _fb, real _M, real _Mmut, real _T, real _Tmut, bool _Ttransform, real _C, real _Binitial){
     
     N = _N;
     G = _G;
@@ -404,6 +413,8 @@ World::World(int _N, int _G, real _B, real _fb, real _M, real _Mmut, real _T, re
     T = _T;
     Tmut = _Tmut;
     Ttransform = _Ttransform;
+    C = _C;
+    Binitial = _Binitial;
     
     time = 0;
     
@@ -411,8 +422,8 @@ World::World(int _N, int _G, real _B, real _fb, real _M, real _Mmut, real _T, re
     offsprings = new Organism * [N];
     
     for(int i = 0; i < N; i++){
-        pop[i] = new Organism(_G, _B, _fb, _M, _Mmut, _T, _Tmut, _Ttransform);
-        offsprings[i] = new Organism(_G, _B, _fb, _M, _Mmut, _T, _Tmut, _Ttransform);
+        pop[i] = new Organism(_G, _B, _fb, _M, _Mmut, _T, _Tmut, _Ttransform, _C, _Binitial);
+        offsprings[i] = new Organism(_G, _B, _fb, _M, _Mmut, _T, _Tmut, _Ttransform, _C, _Binitial);
     }
 }
 
@@ -430,8 +441,10 @@ int main(int argc, char* argv[]){
         real Tmut = atof(argv[9]);
         
         int Ttransform = (argc >= 11) ? atoi(argv[10]): 1;
-        int interval = (argc >= 12) ? atof(argv[11]) : 1;
-        int seed = (argc >= 13) ? atof(argv[12]) : 0;
+        real C = (argc >= 12) ? atof(argv[11]): 1;
+        real Binitial = ((argc >= 13) & (atof(argv[12]) >= 0.)) ? atof(argv[12]): B;
+        int interval = (argc >= 14) ? atof(argv[13]) : 1;
+        int seed = (argc >= 15) ? atof(argv[14]) : 0;
         
         cout << "calculation units to calculate             " << (real)steps * N * G << "\n";
         cout << "\n";
@@ -447,10 +460,12 @@ int main(int argc, char* argv[]){
         cout << "Tmut - transformation probability mutation " << Tmut << "\n";
         cout << "\n";
         cout << "Ttransform - transformation of T/M genes   " << Ttransform << "\n";
+        cout << "C - cost of transformation                 " << C << "\n";
+        cout << "Binitial - initial beneficial genes        " << Binitial << "\n";
         cout << "interval between statistics outputs        " << interval << "\n";
         cout << "seed - random seed                         " << seed << "\n";
         
-        World w(N, G, B, fb, M, Mmut, T, Tmut, Ttransform);
+        World w(N, G, B, fb, M, Mmut, T, Tmut, Ttransform, C, Binitial);
         
 //         w.calc_stat();
 //         cout << w.Favg << "\n";
@@ -477,12 +492,14 @@ int main(int argc, char* argv[]){
         "\n"
         "Optional parameters:"
         "Ttransform - transformation of T/M genes\n"
+        "C - cost of transformation\n"
+        "Binitial - initial content of beneficial genes\n"
         "interval - interval between statistics outputs\n"
         "seed - random seed\n"
         "\n"
         "Example:\n"
         "\n"
-        "./cpp_gpg 2000 100 100 0.1 0.04 0.015 0. 0. 0. \n"
+        "./muller 2000 1000 100 0.1 0.04 0.01 0. 0. 0.05 1 0.1 1. 1000\n"
         ;
     }
 //     w.step();
