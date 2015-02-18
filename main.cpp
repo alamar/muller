@@ -15,6 +15,7 @@ std::default_random_engine generator;
 
 
 typedef double real;
+// typedef float real;
 
 using namespace std;
 
@@ -80,12 +81,12 @@ void Organism::mutate(){
         } else 
 #endif
         {
-            int Mint = M * RAND_MAX;
+//             unsigned int Mint = M * RAND_MAX;
             for(int i = 0; i < G; i++){
-    //             if (randbool(M)){ // equivalent to next line, but a bit slower
-                if (rand() < Mint){
+                if (randbool(M)){ // equivalent to next line, but a bit slower
+//                 if (rand() < Mint){ // equivalent to previous line, but may lead to errors
                     genes[i] = randbool(B);
-                };
+                }
             };
         }
         
@@ -116,10 +117,10 @@ void Organism::transform(Organism * donor){
         } else 
 #endif
         {
-            int Tint = T * RAND_MAX;
+//             unsigned int Tint = T * RAND_MAX;
             for(int i = 0; i < G; i++){
-    //             if (randbool(T)){ // equivalent to next line, but a bit slower
-                if (rand() < Tint){
+                if (randbool(T)){ // equivalent to next line, but a bit slower
+//                 if (rand() < Tint){ // equivalent to previous line, but may lead to errors
                     genes[i] = donor->genes[i];
                 };
             };
@@ -157,9 +158,9 @@ void Organism::calc_fitness(){
     
     E = 0;
     for(int i = 0; i < G; i++){
+//         cout  << genes[i] << " ";
         E += (int)genes[i];
     };
-    
     F = pow((1 - fb), (G - E)); // multiplicative fitness, maximum fitness is always 1
     if (T > 0.) F = F * (1 - C);
 };
@@ -179,6 +180,7 @@ Organism::Organism(int _G, real _B, real _fb, real _M, real _Mmut, real _T, real
     genes = new bool[G];
     M = 1.;
     B = _Binitial;
+//     cout << "B: " << B << " ";
     mutate();
     M = _M;
     B = _B;
@@ -493,13 +495,13 @@ int main(int argc, char* argv[]){
         "Optional parameters:"
         "Ttransform - transformation of T/M genes\n"
         "C - cost of transformation\n"
-        "Binitial - initial content of beneficial genes\n"
+        "Binitial - initial content of beneficial genes (if -1 then Binitial = B)\n"
         "interval - interval between statistics outputs\n"
         "seed - random seed\n"
         "\n"
         "Example:\n"
         "\n"
-        "./muller 2000 1000 100 0.1 0.04 0.01 0. 0. 0.05 1 0.1 1. 1000\n"
+        "./muller 2000 1000 100 0.1 0.04 0.01 0. 0. 0.05 1 0. -1. 1000\n"
         ;
     }
 //     w.step();

@@ -108,7 +108,7 @@ class population:
         if steps:
             self.steps = steps
         #commandline = 
-        print self.paramline
+        #print self.paramline
         command = "nice -n 19 ./muller "
         if sys.platform == "win32":
             command = "muller.exe "
@@ -119,8 +119,20 @@ class population:
         if self.verbose:
             print self.output
         self.readstat()
-        self.output = ""
     
+    def save(self, name = "trajectories"):
+        if not hasattr(self, "output"):
+            print "There are no results, run calculation first!"
+            return
+        if os.path.isfile(name):
+            print "File", name, "exists! Delete it or save in another place."
+            return
+        if not os.path.exists(name):
+            os.mkdir(name)
+        f = open(name + "/" + time.strftime("%Y-%m-%d_%H-%M-%S") + self.paramline + ".txt", "w")
+        f.write(self.output)
+        f.close()
+
     
     
 class batch:
@@ -154,9 +166,11 @@ class batch:
         if verbose:
             print "Running", len(self.models), "tasks, here will be shown some average values over last half of simulation."
         start_t = time.time()
+        i = 0
         for m in self.models:
             if verbose:
-                print m.params
+                print i, m.params
+            i += 1
             
             start = time.time()
             m.run(steps)
@@ -168,6 +182,10 @@ class batch:
         end_t = time.time()
         if verbose:
             print "Total time:", end_t - start_t, "seconds"
+    
+    def save(self, name = "trajectories"):
+        for m in self.models:
+            m.save(name)
     
     def grid(self, x, y, z, p = 0.5):
         """Construct 2d array representing averaged statistic vs two parameters. x, y - names of parameters, z - name of statistic, p - part of statistic that will be averaged"""
@@ -202,6 +220,43 @@ class batch:
             ivalues[yvalues.index(m.params[y])][xvalues.index(m.params[x])] = i
         return xvalues, yvalues, ivalues
     
+
+def difference(y, di):
+    o = []
+    for i in xrange(di, len(y) - di):
+        o.append((y[i + di] - y[i - di]) / 2.)
+    return array(o)
+
+def window_avg(y, di):
+    o = []
+    for i in xrange(di, len(y) - di):
+        o.append(average(y[i - di : i + di]))
+    return array(o)
+
+def fitness_function(fb, G, E):
+    return power(1 - fb, (1 - E) * G)
+
+def fisher_plot(model, dt = 10):
+    di = dt / model.interval
+    dFdt = difference(model.stat["Favg"], di) / dt
+    Fvar = window_avg(array(model.stat["Fstd"]) ** 2, di) # на больших G отчего-то получается линейный график при первой степени, сиречь от стандартного отклонения!
+    
+    E = window_avg(array(model.stat["Eavg"]), di)
+    dE = (model.B - E) * model.M # for one generation!
+    F = window_avg(array(model.stat["Favg"]), di)
+    #mut_pressure = F - fitness_function(model.fb, model.G, E) # correction for mutation pressure
+    mut_pressure = fitness_function(model.fb, model.G, E + dE) - fitness_function(model.fb, model.G, E) # correction for mutation pressure
+    
+    figure()
+    plot(Fvar, dFdt - mut_pressure, ".")
+    plot(Fvar, dFdt, ".")
+    plot(Fvar, mut_pressure, ".")
+    xlabel("fitness variance")
+    ylabel("fitness change")
+    title("Fisher plot of " + str(model.params))
+    
+    figure()
+    plot(F, mut_pressure, ".")
     
     
 def draw_stats(batches, xname = None, yname = None, additional_stats = [], log = True, html = None):
@@ -233,6 +288,10 @@ def draw_stats(batches, xname = None, yname = None, additional_stats = [], log =
         if html:
             htmlfile.write(s)
     
+    def htmlclose():
+        if html:
+            htmlfile.close()
+    
     
     if xname == None:
         xname = batches[0].params.keys()[0]
@@ -240,7 +299,7 @@ def draw_stats(batches, xname = None, yname = None, additional_stats = [], log =
         yname = batches[0].params.keys()[1]
         
     if html:
-        dirname = xname + " " + yname + " " + time.ctime(time.time())
+        dirname = xname + " " + yname + " " + time.strftime("%Y-%m-%d_%H-%M-%S")
         #dirname = str(time.time())
         os.mkdir(dirname)
         htmlname = dirname + "/" + "results.html"
@@ -320,6 +379,7 @@ def draw_stats(batches, xname = None, yname = None, additional_stats = [], log =
             
     htmlwrite("""</body>
 </html>""")
+    htmlclose()
             
     #for b in batches:
         #i = index_grid(b, xname, yname)
