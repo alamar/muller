@@ -67,7 +67,9 @@ void Organism::mutate(){
         if ((M < 0.11) & (G > 40)) {
             std::binomial_distribution<int> distribution(G, M);
             int mutation_number = distribution(generator);
-            bool mutation_log[G];
+//             bool mutation_log[G]; // incompatible with msvc?
+//             vector<bool> mutation_log(G); // too slow
+            bool * mutation_log = (bool *) alloca(G * sizeof(bool));
             for(int i = 0; i < G; i++) mutation_log[i] = false;
             
             for(int i = 0; i < mutation_number; i++){
@@ -103,7 +105,7 @@ void Organism::transform(Organism * donor){
         if ((T < 0.11) & (G > 40)) {
             std::binomial_distribution<int> distribution(G, T);
             int transformation_number = distribution(generator);
-            bool transformation_log[G];
+            bool * transformation_log = (bool *) alloca(G * sizeof(bool));
             for(int i = 0; i < G; i++) transformation_log[i] = false;
             
             for(int i = 0; i < transformation_number; i++){
@@ -314,7 +316,7 @@ void World::calc_stat(){
     EGmin = N;
     EGmax = 0.;
     
-    int EG[G];
+    int * EG = (int *) alloca(G * sizeof(int)); // int EG[G]
     for(int j = 0; j < G; j++) EG[j] = 0;
     
     for(int i = 0; i < N; i++){
@@ -430,7 +432,7 @@ World::World(int _N, int _G, real _B, real _fb, real _M, real _Mmut, real _T, re
 }
 
 int main(int argc, char* argv[]){
-    
+//     cout << sizeof(bool) << endl; // sizeof(bool) == 1 in g++
     if (argc >= 10){
         int steps = atoi(argv[1]); 
         int N = atoi(argv[2]);
