@@ -4,5 +4,6 @@
 *~
 */
 *.out
+*.bat
 muller
 *stackdump

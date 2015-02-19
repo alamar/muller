@@ -3,12 +3,13 @@
 #include <stdlib.h>
 #include <vector>
 #include <string>
-#include <random>
+#include <algorithm>
 
 #define BINOMIAL
 
 #ifdef BINOMIAL
 
+#include <random>
 std::default_random_engine generator;
 
 #endif
@@ -69,7 +70,8 @@ void Organism::mutate(){
             int mutation_number = distribution(generator);
 //             bool mutation_log[G]; // incompatible with msvc?
 //             vector<bool> mutation_log(G); // too slow
-            bool * mutation_log = (bool *) alloca(G * sizeof(bool));
+            // bool * mutation_log = (bool *) alloca(G * sizeof(bool));
+            bool * mutation_log = new bool[G];
             for(int i = 0; i < G; i++) mutation_log[i] = false;
             
             for(int i = 0; i < mutation_number; i++){
@@ -105,7 +107,8 @@ void Organism::transform(Organism * donor){
         if ((T < 0.11) & (G > 40)) {
             std::binomial_distribution<int> distribution(G, T);
             int transformation_number = distribution(generator);
-            bool * transformation_log = (bool *) alloca(G * sizeof(bool));
+            // bool * transformation_log = (bool *) alloca(G * sizeof(bool));
+			bool * transformation_log = new bool[G];
             for(int i = 0; i < G; i++) transformation_log[i] = false;
             
             for(int i = 0; i < transformation_number; i++){
@@ -138,9 +141,10 @@ void Organism::transform(Organism * donor){
 
 void Organism::copy_from(Organism * donor){
     
-    for(int i = 0; i < G; i++){
-        genes[i] = donor->genes[i];
-    };
+    // for(int i = 0; i < G; i++){
+        // genes[i] = donor->genes[i];
+    // };
+	copy(donor->genes, donor->genes + G, genes);
     
     G = donor->G;
     B = donor->B;
@@ -316,7 +320,8 @@ void World::calc_stat(){
     EGmin = N;
     EGmax = 0.;
     
-    int * EG = (int *) alloca(G * sizeof(int)); // int EG[G]
+    // int * EG = (int *) alloca(G * sizeof(int)); // int EG[G]
+    int * EG = new int[G]; // int EG[G]
     for(int j = 0; j < G; j++) EG[j] = 0;
     
     for(int i = 0; i < N; i++){
