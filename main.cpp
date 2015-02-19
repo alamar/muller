@@ -14,6 +14,7 @@ std::default_random_engine generator;
 
 #endif
 
+// const int MAX_GENES = 100000;
 
 typedef double real;
 // typedef float real;
@@ -68,10 +69,13 @@ void Organism::mutate(){
         if ((M < 0.11) & (G > 40)) {
             std::binomial_distribution<int> distribution(G, M);
             int mutation_number = distribution(generator);
+            
 //             bool mutation_log[G]; // incompatible with msvc?
 //             vector<bool> mutation_log(G); // too slow
-            // bool * mutation_log = (bool *) alloca(G * sizeof(bool));
-            bool * mutation_log = new bool[G];
+            // bool * mutation_log = (bool *) alloca(G * sizeof(bool)); // incompatible with mingw!
+            bool * mutation_log = new bool[G]; // slower than alloca but cross platform
+//             static bool mutation_log[MAX_GENES]; // fast and compatible, but not thread safe!
+
             for(int i = 0; i < G; i++) mutation_log[i] = false;
             
             for(int i = 0; i < mutation_number; i++){
@@ -82,6 +86,7 @@ void Organism::mutate(){
                 genes[pos] = randbool(B);
                 mutation_log[pos] = true;
             }
+            delete mutation_log;
         } else 
 #endif
         {
@@ -108,7 +113,8 @@ void Organism::transform(Organism * donor){
             std::binomial_distribution<int> distribution(G, T);
             int transformation_number = distribution(generator);
             // bool * transformation_log = (bool *) alloca(G * sizeof(bool));
-			bool * transformation_log = new bool[G];
+            bool * transformation_log = new bool[G];
+//             static bool transformation_log[MAX_GENES];
             for(int i = 0; i < G; i++) transformation_log[i] = false;
             
             for(int i = 0; i < transformation_number; i++){
@@ -119,6 +125,7 @@ void Organism::transform(Organism * donor){
                 genes[pos] = donor->genes[pos];
                 transformation_log[pos] = true;
             }
+            delete transformation_log;
         } else 
 #endif
         {
@@ -322,6 +329,7 @@ void World::calc_stat(){
     
     // int * EG = (int *) alloca(G * sizeof(int)); // int EG[G]
     int * EG = new int[G]; // int EG[G]
+//     static int EG[MAX_GENES];
     for(int j = 0; j < G; j++) EG[j] = 0;
     
     for(int i = 0; i < N; i++){
@@ -384,6 +392,8 @@ void World::calc_stat(){
     EGstd = sqrt(abs((EGstd / N / N - G * EGavg * EGavg) / (G - 1)));
     EGmin = EGmin / N;
     EGmax = EGmax / N;
+    
+    delete EG;
 }
 
 void World::write_stat(){
