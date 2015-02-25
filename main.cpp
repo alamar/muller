@@ -7,12 +7,17 @@
 
 #define BINOMIAL
 
-#ifdef BINOMIAL
+// #ifdef BINOMIAL
 
 #include <random>
-std::default_random_engine generator;
 
-#endif
+std::default_random_engine generator;
+// std::ranlux24 generator;
+// std::mt19937 generator;
+// std::ranlux24_base generator;
+
+
+// #endif
 
 // const int MAX_GENES = 100000;
 
@@ -21,6 +26,7 @@ typedef double real;
 
 using namespace std;
 
+/*
 real frand(){
     return static_cast<real>(rand()) / RAND_MAX;
 };
@@ -33,6 +39,7 @@ bool randbool(real probability){
 int randint(int n){
     return rand() % n;
 }
+*/
 
 class Organism {
     
@@ -63,12 +70,16 @@ public:
 
 void Organism::mutate(){
     
+    std::bernoulli_distribution random_mutation(B);
+    std::bernoulli_distribution whether_to_mutate(M);
     if (M > 0) {
+        
         
 #ifdef BINOMIAL
         if ((M < 0.11) & (G > 40)) {
-            std::binomial_distribution<int> distribution(G, M);
-            int mutation_number = distribution(generator);
+            // std::binomial_distribution<int> distribution(G, M);
+            int mutation_number = std::binomial_distribution<int>(G, M)(generator);
+	    std::uniform_int_distribution<int> random_gene(0, G - 1);
             
 //             bool mutation_log[G]; // incompatible with msvc?
 //             vector<bool> mutation_log(G); // too slow
@@ -79,38 +90,48 @@ void Organism::mutate(){
             for(int i = 0; i < G; i++) mutation_log[i] = false;
             
             for(int i = 0; i < mutation_number; i++){
-                int pos = randint(G);
+                // int pos = randint(G);
+                int pos = random_gene(generator);
                 while(mutation_log[pos] == true) {
-                    pos = randint(G);
+                    // pos = randint(G);
+                    pos = random_gene(generator);
                 }
-                genes[pos] = randbool(B);
+                // genes[i] = randbool(B);
+                genes[pos] = random_mutation(generator);
                 mutation_log[pos] = true;
             }
             delete mutation_log;
         } else 
 #endif
         {
-//             unsigned int Mint = M * RAND_MAX;
             for(int i = 0; i < G; i++){
-                if (randbool(M)){ // equivalent to next line, but a bit slower
-//                 if (rand() < Mint){ // equivalent to previous line, but may lead to errors
-                    genes[i] = randbool(B);
+                // if (randbool(M)){
+                if (whether_to_mutate(generator)){
+                    // genes[i] = randbool(B);
+                    genes[i] = random_mutation(generator);
                 }
             };
         }
         
+        // if ((Tmut > 0) && randbool(M)) T = max(0., T + frand() * Tmut - 0.5 * Tmut);
+        if ((Tmut > 0) && whether_to_mutate(generator)) 
+            T = max(0., T + std::uniform_real_distribution<real> (- 0.5 * Tmut, 0.5 * Tmut)(generator));
+        // if ((Mmut > 0) && randbool(M)) M = max(0., M + frand()* Mmut - 0.5 * Mmut);
+        if ((Mmut > 0) && whether_to_mutate(generator))
+            M = max(0., M + std::uniform_real_distribution<real> (- 0.5 * Mmut, 0.5 * Mmut)(generator));
         calc_fitness();
     };
-    if ((Tmut > 0) && randbool(M)) T = max(0., T + frand() * Tmut - 0.5 * Tmut);
-    if ((Mmut > 0) && randbool(M)) M = max(0., M + frand()* Mmut - 0.5 * Mmut);
 };
 
 void Organism::transform(Organism * donor){
+    std::bernoulli_distribution whether_to_transform(T);
     if (T > 0){
         
 #ifdef BINOMIAL
         if ((T < 0.11) & (G > 40)) {
             std::binomial_distribution<int> distribution(G, T);
+	    std::uniform_int_distribution<int> random_gene(0, G - 1);
+            
             int transformation_number = distribution(generator);
             // bool * transformation_log = (bool *) alloca(G * sizeof(bool));
             bool * transformation_log = new bool[G];
@@ -118,9 +139,11 @@ void Organism::transform(Organism * donor){
             for(int i = 0; i < G; i++) transformation_log[i] = false;
             
             for(int i = 0; i < transformation_number; i++){
-                int pos = randint(G);
+                // int pos = randint(G);
+                int pos = random_gene(generator);
                 while(transformation_log[pos] == true) {
-                    pos = randint(G);
+                    // pos = randint(G);
+                    pos = random_gene(generator);
                 }
                 genes[pos] = donor->genes[pos];
                 transformation_log[pos] = true;
@@ -129,20 +152,21 @@ void Organism::transform(Organism * donor){
         } else 
 #endif
         {
-//             unsigned int Tint = T * RAND_MAX;
             for(int i = 0; i < G; i++){
-                if (randbool(T)){ // equivalent to next line, but a bit slower
-//                 if (rand() < Tint){ // equivalent to previous line, but may lead to errors
+                // if (randbool(T)){ 
+                if (whether_to_transform(generator)){ 
                     genes[i] = donor->genes[i];
                 };
             };
         }
         
+        if (Ttransform){
+            // if (randbool(T)) T = donor->T;
+            if (whether_to_transform(generator)) T = donor->T;
+            // if (randbool(T)) M = donor->M;
+            if (whether_to_transform(generator)) M = donor->M;
+        }
         calc_fitness();    
-    }
-    if (Ttransform){
-        if (randbool(T)) T = donor->T;
-        if (randbool(T)) M = donor->M;
     }
 };
 
@@ -271,9 +295,11 @@ void World::select(){
         roulette[i] = total;
 //     cout << total << "\n";
     }
+    std::uniform_real_distribution<real> random_roll(0, total);
     vector <real>::iterator pos;
     for(int i = 0; i < N; i++){
-        pos = lower_bound(roulette.begin(), roulette.end(), frand() * total);
+        // pos = lower_bound(roulette.begin(), roulette.end(), frand() * total);
+        pos = lower_bound(roulette.begin(), roulette.end(), random_roll(generator));
 //         cout << pos - roulette.begin() << "\n";
         offsprings[i]->copy_from(pop[pos - roulette.begin()]);
     }
@@ -281,9 +307,11 @@ void World::select(){
 
 void World::step(){
     select();
+    std::uniform_int_distribution<int> random_donor(0, N - 1);
     for(int i = 0; i < N; i++){
         offsprings[i]->mutate();
-        offsprings[i]->transform(pop[randint(N)]);
+        //offsprings[i]->transform(pop[randint(N)]);
+        offsprings[i]->transform(pop[random_donor(generator)]);
     }
     swap(pop, offsprings);
     time += 1;
