@@ -4,6 +4,7 @@
 #include <vector>
 #include <string>
 #include <algorithm>
+#include <chrono>
 
 #define BINOMIAL
 
@@ -45,6 +46,8 @@ class Organism {
     
 public:
     
+    std::default_random_engine * generator;
+    
     bool * genes; // genome
     
     int G; // number of genes
@@ -65,7 +68,7 @@ public:
     void copy_from(Organism * donor);
     void calc_fitness();
     
-    Organism(int _G, real _B, real _fb, real _M, real _Mmut, real _T, real _Tmut, bool _Ttransform, real _C, real _Binitial);
+    Organism(int _G, real _B, real _fb, real _M, real _Mmut, real _T, real _Tmut, bool _Ttransform, real _C, real _Binitial, std::default_random_engine * _generator);
 };
 
 void Organism::mutate(){
@@ -78,7 +81,7 @@ void Organism::mutate(){
 #ifdef BINOMIAL
         if ((M < 0.11) & (G > 40)) {
             // std::binomial_distribution<int> distribution(G, M);
-            int mutation_number = std::binomial_distribution<int>(G, M)(generator);
+            int mutation_number = std::binomial_distribution<int>(G, M)(*generator);
 	    std::uniform_int_distribution<int> random_gene(0, G - 1);
             
 //             bool mutation_log[G]; // incompatible with msvc?
@@ -91,13 +94,13 @@ void Organism::mutate(){
             
             for(int i = 0; i < mutation_number; i++){
                 // int pos = randint(G);
-                int pos = random_gene(generator);
+                int pos = random_gene(*generator);
                 while(mutation_log[pos] == true) {
                     // pos = randint(G);
-                    pos = random_gene(generator);
+                    pos = random_gene(*generator);
                 }
                 // genes[i] = randbool(B);
-                genes[pos] = random_mutation(generator);
+                genes[pos] = random_mutation(*generator);
                 mutation_log[pos] = true;
             }
             delete mutation_log;
@@ -106,19 +109,19 @@ void Organism::mutate(){
         {
             for(int i = 0; i < G; i++){
                 // if (randbool(M)){
-                if (whether_to_mutate(generator)){
+                if (whether_to_mutate(*generator)){
                     // genes[i] = randbool(B);
-                    genes[i] = random_mutation(generator);
+                    genes[i] = random_mutation(*generator);
                 }
             };
         }
         
         // if ((Tmut > 0) && randbool(M)) T = max(0., T + frand() * Tmut - 0.5 * Tmut);
-        if ((Tmut > 0) && whether_to_mutate(generator)) 
-            T = max(0., T + std::uniform_real_distribution<real> (- 0.5 * Tmut, 0.5 * Tmut)(generator));
+        if ((Tmut > 0) && whether_to_mutate(*generator)) 
+            T = max(0., T + std::uniform_real_distribution<real> (- 0.5 * Tmut, 0.5 * Tmut)(*generator));
         // if ((Mmut > 0) && randbool(M)) M = max(0., M + frand()* Mmut - 0.5 * Mmut);
-        if ((Mmut > 0) && whether_to_mutate(generator))
-            M = max(0., M + std::uniform_real_distribution<real> (- 0.5 * Mmut, 0.5 * Mmut)(generator));
+        if ((Mmut > 0) && whether_to_mutate(*generator))
+            M = max(0., M + std::uniform_real_distribution<real> (- 0.5 * Mmut, 0.5 * Mmut)(*generator));
         calc_fitness();
     };
 };
@@ -132,7 +135,7 @@ void Organism::transform(Organism * donor){
             std::binomial_distribution<int> distribution(G, T);
 	    std::uniform_int_distribution<int> random_gene(0, G - 1);
             
-            int transformation_number = distribution(generator);
+            int transformation_number = distribution(*generator);
             // bool * transformation_log = (bool *) alloca(G * sizeof(bool));
             bool * transformation_log = new bool[G];
 //             static bool transformation_log[MAX_GENES];
@@ -140,10 +143,10 @@ void Organism::transform(Organism * donor){
             
             for(int i = 0; i < transformation_number; i++){
                 // int pos = randint(G);
-                int pos = random_gene(generator);
+                int pos = random_gene(*generator);
                 while(transformation_log[pos] == true) {
                     // pos = randint(G);
-                    pos = random_gene(generator);
+                    pos = random_gene(*generator);
                 }
                 genes[pos] = donor->genes[pos];
                 transformation_log[pos] = true;
@@ -154,7 +157,7 @@ void Organism::transform(Organism * donor){
         {
             for(int i = 0; i < G; i++){
                 // if (randbool(T)){ 
-                if (whether_to_transform(generator)){ 
+                if (whether_to_transform(*generator)){ 
                     genes[i] = donor->genes[i];
                 };
             };
@@ -162,9 +165,9 @@ void Organism::transform(Organism * donor){
         
         if (Ttransform){
             // if (randbool(T)) T = donor->T;
-            if (whether_to_transform(generator)) T = donor->T;
+            if (whether_to_transform(*generator)) T = donor->T;
             // if (randbool(T)) M = donor->M;
-            if (whether_to_transform(generator)) M = donor->M;
+            if (whether_to_transform(*generator)) M = donor->M;
         }
         calc_fitness();    
     }
@@ -202,7 +205,7 @@ void Organism::calc_fitness(){
     if (T > 0.) F = F * (1 - C);
 };
 
-Organism::Organism(int _G, real _B, real _fb, real _M, real _Mmut, real _T, real _Tmut, bool _Ttransform, real _C, real _Binitial){
+Organism::Organism(int _G, real _B, real _fb, real _M, real _Mmut, real _T, real _Tmut, bool _Ttransform, real _C, real _Binitial, std::default_random_engine * _generator){
     
     G = _G;
     B = _B;
@@ -213,6 +216,8 @@ Organism::Organism(int _G, real _B, real _fb, real _M, real _Mmut, real _T, real
     Tmut = _Tmut;
     Ttransform = _Ttransform;
     C = _C;
+
+    generator = _generator;
     
     genes = new bool[G];
     M = 1.;
@@ -226,6 +231,13 @@ Organism::Organism(int _G, real _B, real _fb, real _M, real _Mmut, real _T, real
 class World {
     
 public:
+    
+    std::default_random_engine generator;
+    // std::ranlux24 generator;
+    // std::mt19937 generator;
+    // std::ranlux24_base generator;
+    
+    long long int seed;
     
     int N; // number of individuals
     int G; // number of genes
@@ -249,7 +261,7 @@ public:
     void run(int steps, int interval);
     
     // void init(int _N, int _G, real _B, real _fb, real _M, real _Mmut, real _T, real _Tmut);
-    World(int _N, int _G, real _B, real _fb, real _M, real _Mmut, real _T, real _Tmut, bool _Ttransform, real _C, real _Binitial);
+    World(int _N, int _G, real _B, real _fb, real _M, real _Mmut, real _T, real _Tmut, bool _Ttransform, real _C, real _Binitial, long long int _seed);
     
     // statistics
     
@@ -449,7 +461,7 @@ void World::write_header(){
     "\n";
 }
 
-World::World(int _N, int _G, real _B, real _fb, real _M, real _Mmut, real _T, real _Tmut, bool _Ttransform, real _C, real _Binitial){
+World::World(int _N, int _G, real _B, real _fb, real _M, real _Mmut, real _T, real _Tmut, bool _Ttransform, real _C, real _Binitial, long long int _seed){
     
     N = _N;
     G = _G;
@@ -465,12 +477,16 @@ World::World(int _N, int _G, real _B, real _fb, real _M, real _Mmut, real _T, re
     
     time = 0;
     
+    seed = _seed;
+    std::seed_seq seed2 = {seed}; 
+    generator.seed(seed2);
+    
     pop = new Organism * [N];
     offsprings = new Organism * [N];
     
     for(int i = 0; i < N; i++){
-        pop[i] = new Organism(_G, _B, _fb, _M, _Mmut, _T, _Tmut, _Ttransform, _C, _Binitial);
-        offsprings[i] = new Organism(_G, _B, _fb, _M, _Mmut, _T, _Tmut, _Ttransform, _C, _Binitial);
+        pop[i] = new Organism(_G, _B, _fb, _M, _Mmut, _T, _Tmut, _Ttransform, _C, _Binitial, &generator);
+        offsprings[i] = new Organism(_G, _B, _fb, _M, _Mmut, _T, _Tmut, _Ttransform, _C, _Binitial, &generator);
     }
 }
 
@@ -491,7 +507,15 @@ int main(int argc, char* argv[]){
         real C = (argc >= 12) ? atof(argv[11]): 1;
         real Binitial = ((argc >= 13) & (atof(argv[12]) >= 0.)) ? atof(argv[12]): B;
         int interval = (argc >= 14) ? atof(argv[13]) : 1;
-        int seed = (argc >= 15) ? atof(argv[14]) : 0;
+        long long int seed = (argc >= 15) ? atof(argv[14]) : -1;
+        
+        if (seed < 0){ // setting random seed from current time if seed < 0
+            using namespace std::chrono;
+            system_clock::time_point tp = system_clock::now();
+            system_clock::duration dtn = tp.time_since_epoch();
+            // seed = dtn.count(); // current time
+            seed = dtn.count() * system_clock::period::num % system_clock::period::den; // subsecond part of current time
+        }
         
         cout << "calculation units to calculate             " << (real)steps * N * G << "\n";
         cout << "\n";
@@ -512,7 +536,7 @@ int main(int argc, char* argv[]){
         cout << "interval between statistics outputs        " << interval << "\n";
         cout << "seed - random seed                         " << seed << "\n";
         
-        World w(N, G, B, fb, M, Mmut, T, Tmut, Ttransform, C, Binitial);
+        World w(N, G, B, fb, M, Mmut, T, Tmut, Ttransform, C, Binitial, seed);
         
 //         w.calc_stat();
 //         cout << w.Favg << "\n";
@@ -542,7 +566,7 @@ int main(int argc, char* argv[]){
         "C - cost of transformation\n"
         "Binitial - initial content of beneficial genes (if -1 then Binitial = B)\n"
         "interval - interval between statistics outputs\n"
-        "seed - random seed\n"
+        "seed - random seed (if -1 then seed will be random)\n"
         "\n"
         "Example:\n"
         "\n"

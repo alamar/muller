@@ -33,13 +33,14 @@ import os, sys
 
 class population:
     
-    def __init__(self, steps = 200, N = 100, G = 100, M = 0.015, B = 0.1, fb = 0.05, T = 0., Tmut = 0., Mmut = 0., Ttransform = 1., C = 0., Binitial = -1., interval = 1, verbose = False):
+    def __init__(self, steps = 200, N = 100, G = 100, M = 0.015, B = 0.1, fb = 0.05, T = 0., Tmut = 0., Mmut = 0., Ttransform = 1., C = 0., Binitial = -1., interval = 1, seed = -1, verbose = False):
         
         # C and seed is not implemented yet!
         
         self.steps = steps
         self.interval = interval
         self.verbose = verbose
+        self.seed = seed
         
         self.N = N
         self.G = G
@@ -52,7 +53,7 @@ class population:
         self.Ttransform = Ttransform
         self.C = C
         
-        self.paramline = " {} {} {} {} {} {} {} {} {} {} {} ".format(N, G, B, fb, M, Mmut, T, Tmut, Ttransform, C, Binitial)
+        self.paramline = " {} {} {} {} {} {} {} {} {} {} {} {} {} ".format(N, G, B, fb, M, Mmut, T, Tmut, Ttransform, C, Binitial, interval, seed)
         #self.paramline = " " + N +  " " + G + " " + B + " " + fb + " " + M + " " + Mmut + " " + T + " " + Tmut + " " + Ttransform + " "
         #commandline = "./cpp_gpg " + paramline
         #self.run()
@@ -112,10 +113,10 @@ class population:
         command = "nice -n 19 ./muller "
         if sys.platform == "win32":
             command = "muller.exe "
-            self.output = subprocess.check_output(command + str(self.steps) + self.paramline + str(self.interval))
+            self.output = subprocess.check_output(command + str(self.steps) + self.paramline)
         else:
             command = "nice -n 19 ./muller "
-            self.output = commands.getoutput(command + str(self.steps) + self.paramline + str(self.interval))
+            self.output = commands.getoutput(command + str(self.steps) + self.paramline)
         if self.verbose:
             print self.output
         self.readstat()
