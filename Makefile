@@ -1,6 +1,6 @@
 TARGET=$(shell basename `pwd`)
 #SOURCES=$(wildcard *.cpp)
-SOURCES= main.cpp
+SOURCES= main.cpp organism.cpp world.cpp
 OBJECTS=$(SOURCES:%.cpp=%.o)
 
 # CXXFLAGS+= -O3

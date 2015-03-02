@@ -5,5 +5,6 @@
 */
 *.out
 *.bat
+*.swp
 muller
 *stackdump
