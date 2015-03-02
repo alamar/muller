@@ -1,4 +1,5 @@
 *.o
+*.so
 *.pyc
 *.pyo
 *~
@@ -7,4 +8,6 @@
 *.bat
 *.swp
 muller
+muller.py
+muller_wrap.cpp
 *stackdump
