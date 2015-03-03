@@ -140,8 +140,8 @@ class batch:
         """Generate cartesian product of parameters and initialize simulation systems.
         Params is dictionary of lists of variable parameters.
         Constants is dictionary of constant parameters. Example:
-        
-        b = muller_finite.batch({"T": [0., 0.5, 1.], "G": [10, 20], "fb": [0.04]})
+
+        b0 = batch.batch({"G": [10, 100, 1000], "N": [10, 100, 1000]}, {"fb": 0.04, "B": 0.1, "T": 0., "seed": 265})
         b.run(2000)"""
         self.params = params
         self.constants = constants
@@ -232,24 +232,47 @@ def window_avg(y, di):
         o.append(average(y[i - di : i + di]))
     return array(o)
 
+# functions from fraction of genes
+# def fitness_function(fb, G, E):
+#     return pow(1 - fb, (1 - E) * G)
+
+# def reverse_fitness_function(fb, G, F):
+#     # calculates E from given F
+#     return 1 - (log(F) / log(1 - fb)) / G
+
+# functions from quantity of genes
 def fitness_function(fb, G, E):
-    return power(1 - fb, (1 - E) * G)
+    return pow(1 - fb, G - E)
+
+def reverse_fitness_function(fb, G, F):
+    # calculates E from given F
+    return G - (log(F) / log(1 - fb))
 
 def fisher_plot(model, dt = 10):
+    # dt is averaging interval
     di = dt / model.interval
-    dFdt = difference(model.stat["Favg"], di) / dt
+    dFdt = difference(model.stat["Favg"], di) / dt # actual fitness difference after one step
     Fvar = window_avg(array(model.stat["Fstd"]) ** 2, di) # на больших G отчего-то получается линейный график при первой степени, сиречь от стандартного отклонения!
     
-    E = window_avg(array(model.stat["Eavg"]), di)
-    dE = (model.B - E) * model.M # for one generation!
+    # E = window_avg(array(model.stat["Eavg"]), di)
+    # dE = (model.B - E) * model.M # for one generation!
     F = window_avg(array(model.stat["Favg"]), di)
-    #mut_pressure = F - fitness_function(model.fb, model.G, E) # correction for mutation pressure
-    mut_pressure = fitness_function(model.fb, model.G, E + dE) - fitness_function(model.fb, model.G, E) # correction for mutation pressure
+    Fnext = F + Fvar # fitness after one selection round according to Fisher's law
+    Enext = reverse_fitness_function(model.fb, model.G, Fnext)
+    dE = (model.B - Enext) * model.M # change of E due to mutations for one generation
+
+    mut_pressure = Fnext - fitness_function(model.fb, model.G, Enext + dE) # correction for mutation pressure
+    # mut_pressure = fitness_function(model.fb, model.G, E + dE) - fitness_function(model.fb, model.G, E) # correction for mutation pressure
+
+    dFdt_theor = fitness_function(model.fb, model.G, Enext + dE) - F # fitness after one round of selection and mutation according to Fisher's law
     
     figure()
-    plot(Fvar, dFdt - mut_pressure, ".")
     plot(Fvar, dFdt, ".")
-    plot(Fvar, mut_pressure, ".")
+    plot(Fvar, dFdt_theor, ".")
+    plot(Fvar, dFdt - dFdt_theor, ".")
+    # plot(Fvar, dFdt - mut_pressure, ".")
+    plot(Fvar, -mut_pressure, ".")
+    plot(Fvar, Fvar, ".")
     xlabel("fitness variance")
     ylabel("fitness change")
     title("Fisher plot of " + str(model.params))
@@ -257,7 +280,106 @@ def fisher_plot(model, dt = 10):
     figure()
     plot(F, mut_pressure, ".")
     
+   
+def fisher_test(world, steps):
+    """Test for selection and mutation processes. Mutation ok (as of 3.03.2015), selection is 15 times stronger than theoretical :( """
+    for i in xrange(steps):
+        fvec = [o.F for o in world]
+        F = average(fvec)
+        # Fvar = var(fvec)
+        
+        world.select()
+        world.swap_pop()
+        
+        fvec0 = [o.F for o in world]
+        F0 = average(fvec0)
+        
+        print ""
+        print "Step ", i
+        print ""
+        print "Selection:"
+        print "Fitness before: ", F
+        print "Fitness variance (= predicted fitness change): ", var(fvec)
+        print "                        Actual fitness change: ", F0 - F
+        print "Fitness after: ", F0
+        
+        evec0 = [o.E for o in world]
+        
+        for o in world: o.mutate()
+        
+        fvec1 = [o.F for o in world]
+        evec1 = [o.E for o in world]
+        
+        dEpred = (world.B - average(evec0) / world.G) * world.M * world.G
+        F0calc = fitness_function(world.fb, world.G, average(evec0)) # this is wrong cos fitness is nonlinear function of E, so average fitness is not fitness of average E
+        F1calc = fitness_function(world.fb, world.G, average(evec0) + dEpred) # wrong ^^
+        print ""
+        print "Mutation:"
+        print "Good genes (E) before: ", average(evec0)
+        print "               Predicted E change: ", dEpred
+        print "                  Actual E change: ", (average(evec1) - average(evec0))
+        print "           Fitness before: ", average(fvec0)
+        print "Calculated fitness before: ", F0calc
+        print "         Predicted fitness change: ", F1calc - F0calc
+        print "            Actual fitness change: ", average(fvec1) - F0
+ 
+def selection_test(world, steps):
+    """Test for selection process. Returns fitnesses, numbers of children, theoretical numbers of children. Example usage:
+        
+        w = muller.World(1000, 100, 0.1, 0.04, 0.01, 0., 0.05, 0., 1., 0., 0.1, 879958415)
+        f, c, p = batch.selection_test(w, 10000); figure(); plot(f, c, "."); plot(f, p); show()
+        
+        Passed ok (as of 3.03.2015)"""
+    f = [o.F for o in world] # fitnesses
+    children = [0 for o in world]
+    for i in xrange(len(world)):
+        world[i].E = i # dummy number to identify ancestors
+    for i in xrange(steps):
+        world.select()
+        for i in xrange(len(world)):
+            children[world.offsprings[i].E] += 1
     
+    k = steps * 1. / average(f)
+    children_pred = map(lambda f: f * k, f) # theoretical number of children
+    return f, children, children_pred
+
+
+def mutation_test(world, steps, B = None):
+    """Test for mutational process. Passed ok (as of 3.03.2015)"""
+    a = world[0]
+    o = world.offsprings[0]
+    B0 = a.B
+    if B:
+        a.B = B
+    else:
+        B = a.B
+    u = 0 # number of increments of genes (beneficial mutations)
+    d = 0 # number of decrements of genes (deleterious mutations)
+    M = a.M
+    E0 = a.E
+    G = a.G
+    e0 = 1. * E0 / G
+    for i in xrange(steps):
+        o.copy_from(a)
+        o.mutate()
+        for j in xrange(len(o)):
+            if o[j] and not a[j]: u += 1
+            if a[j] and not o[j]: d += 1
+    print "Statistics of ", steps, " mutations of ", G, " genes (total ", G * steps, "mutations):"
+    print "E0: ", E0
+    print "e0: ", e0
+    print "G: ", G
+    print "M: ", M
+    print "B: ", B
+    print "Beneficial mutations : ", u
+    print "Deleterious mutations: ", d
+    print "Predicted beneficial mutations  (G - E0) * M * B * steps: ", (G - E0) * M * B * steps
+    print "Predicted deleterious mutations E0 * M * (1 - B) * steps: ", E0 * M * (1 - B) * steps
+        
+    a.B = B0
+    o.B = B0
+
+
 def draw_stats(batches, xname = None, yname = None, additional_stats = [], log = True, html = None):
     "Draw many interesting graphs about results. xname, yname - names of parameters"
     #fig_n = 0

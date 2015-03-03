@@ -1,6 +1,8 @@
 #include "world.h"
 
-
+void World::swap_pop(){
+    swap(pop, offsprings);
+};
 
 void World::select(){
     vector <real> roulette(N);
@@ -28,7 +30,8 @@ void World::step(){
         //offsprings[i]->transform(pop[randint(N)]);
         offsprings[i]->transform(pop[random_donor(generator)]);
     }
-    swap(pop, offsprings);
+    // swap(pop, offsprings);
+    swap_pop();
     time += 1;
 }
 
