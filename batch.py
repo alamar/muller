@@ -244,11 +244,49 @@ def window_avg(y, di):
 def fitness_function(fb, G, E):
     return pow(1 - fb, G - E)
 
+def log_fitness_function(fb, G, E):
+    # logarithmic fitness (rate of replication) as it occurs in fisher's theorem
+    return (G - E) * log(1 - fb)
+
 def reverse_fitness_function(fb, G, F):
     # calculates E from given F
     return G - (log(F) / log(1 - fb))
 
+def reverse_log_fitness_function(fb, G, logF):
+    # calculates E from given F
+    return G - (logF / log(1 - fb))
+
 def fisher_plot(model, dt = 10):
+    di = max(dt / model.interval, 1)
+    dt = model.interval * di
+    
+    E0 = array(model.stat["Eavg"]) * model.G
+    F0 = log_fitness_function(model.fb, model.G, E0) # logarithmic fitness
+    Fvar0 = (array(model.stat["Estd"]) * model.G * log(1 - model.fb)) ** 2 # variance of the above
+    
+    E = window_avg(E0, di)
+    F = window_avg(F0, di)
+    Fvar = window_avg(Fvar0, di)
+    dFdt = difference(F0, di) / dt
+    
+    Fnext = F + Fvar # fitness after one selection round according to Fisher's law
+    Enext = reverse_log_fitness_function(model.fb, model.G, Fnext) # E after selection
+    
+    dEmut = (model.B * model.G - Enext) * model.M # change of E due to mutations for one generation
+    dFmut = - dEmut * log(1 - model.fb)
+    E1 = Enext + dEmut # E after selection and mutation
+    F1 = log_fitness_function(model.fb, model.G, E1) # fitness after selection and mutation
+    
+    figure()
+    plot(Fvar, dFdt, ".")   # total actual dF/dt
+    plot(Fvar, F1 - F) # predicted total dF/dt
+    plot(Fvar, dFmut, ".", markersize=2)  # predicted dF/dt of mutation
+    plot(Fvar, Fvar, ".", markersize=2)   # variance of logarithmic fitness = predicted dF/dt of selection
+
+
+
+def old_fisher_plot(model, dt = 10):
+    # wrong calculation!!!11
     # dt is averaging interval
     di = dt / model.interval
     dFdt = difference(model.stat["Favg"], di) / dt # actual fitness difference after one step
@@ -284,14 +322,14 @@ def fisher_plot(model, dt = 10):
 def fisher_test(world, steps):
     """Test for selection and mutation processes. Mutation ok (as of 3.03.2015), selection is 15 times stronger than theoretical :( """
     for i in xrange(steps):
-        fvec = [o.F for o in world]
+        fvec = log([o.F for o in world]) # logarithmic fitness as it occurs in fisher's theorem
         F = average(fvec)
         # Fvar = var(fvec)
         
         world.select()
         world.swap_pop()
         
-        fvec0 = [o.F for o in world]
+        fvec0 = log([o.F for o in world])
         F0 = average(fvec0)
         
         print ""
@@ -307,12 +345,12 @@ def fisher_test(world, steps):
         
         for o in world: o.mutate()
         
-        fvec1 = [o.F for o in world]
+        fvec1 = log([o.F for o in world])
         evec1 = [o.E for o in world]
         
         dEpred = (world.B - average(evec0) / world.G) * world.M * world.G
-        F0calc = fitness_function(world.fb, world.G, average(evec0)) # this is wrong cos fitness is nonlinear function of E, so average fitness is not fitness of average E
-        F1calc = fitness_function(world.fb, world.G, average(evec0) + dEpred) # wrong ^^
+        F0calc = log_fitness_function(world.fb, world.G, average(evec0)) # this is wrong cos fitness is nonlinear function of E, so average fitness is not fitness of average E
+        F1calc = log_fitness_function(world.fb, world.G, average(evec0) + dEpred) # wrong ^^
         print ""
         print "Mutation:"
         print "Good genes (E) before: ", average(evec0)
