@@ -278,10 +278,14 @@ def fisher_plot(model, dt = 10):
     F1 = log_fitness_function(model.fb, model.G, E1) # fitness after selection and mutation
     
     figure()
-    plot(Fvar, dFdt, ".")   # total actual dF/dt
-    plot(Fvar, F1 - F) # predicted total dF/dt
-    plot(Fvar, dFmut, ".", markersize=2)  # predicted dF/dt of mutation
-    plot(Fvar, Fvar, ".", markersize=2)   # variance of logarithmic fitness = predicted dF/dt of selection
+    title("Actual and theoretical fitness change")
+    xlabel("fitness variance")
+    ylabel("fitness change per one step")
+    plot(Fvar, dFdt, ".", label="actual dF/dt")   # total actual dF/dt
+    plot(Fvar, F1 - F, label="predicted dF/dt") # predicted total dF/dt
+    plot(Fvar, dFmut, ".", markersize=2, label="mutational dF/dt")  # predicted dF/dt of mutation
+    plot(Fvar, Fvar, ".", markersize=2, label="selection dF/dt")   # variance of logarithmic fitness = predicted dF/dt of selection
+    legend()
 
 
 
