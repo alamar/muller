@@ -331,7 +331,7 @@ def fisher_test(world, steps):
         # Fvar = var(fvec)
         
         world.select()
-        world.swap_pop()
+        # world.swap_pop()
         
         fvec0 = log([o.F for o in world])
         F0 = average(fvec0)
@@ -347,7 +347,8 @@ def fisher_test(world, steps):
         
         evec0 = [o.E for o in world]
         
-        for o in world: o.mutate()
+        # for o in world: o.mutate()
+        world.mutate()
         
         fvec1 = log([o.F for o in world])
         evec1 = [o.E for o in world]
@@ -378,6 +379,7 @@ def selection_test(world, steps):
         world[i].E = i # dummy number to identify ancestors
     for i in xrange(steps):
         world.select()
+        world.swap_pop() # offsprings will be always in offsprings array, pop won't change
         for i in xrange(len(world)):
             children[world.offsprings[i].E] += 1
     

@@ -20,18 +20,48 @@ void World::select(){
 //         cout << pos - roulette.begin() << "\n";
         offsprings[i]->copy_from(pop[pos - roulette.begin()]);
     }
+    swap_pop();
+}
+
+void World::mutate(){ // mutate pop[]
+    for (int i = 0; i < N; i++){
+        pop[i]->mutate();
+    }
+}
+
+void World::transform(){ // transform pop[]
+    for (int i = 0; i < N; i++){
+        offsprings[i]->copy_from(pop[i]);
+    }
+    
+    /* // alternative transformation - in one direction!
+    std::uniform_int_distribution<int> random_donor(0, N - 1);
+    for (int i = 0; i < N; i++){
+        offsprings[i]->transform(pop[random_donor(generator)]);
+    }*/
+    
+    // reciprocal transformation in pairs
+    // assuming organisms are shuffled good enough by selection process!
+    // if population size is odd then the last organism is alone!
+    for (int i = 0; i < N-1; i+=2){
+        offsprings[i]->transform(pop[i+1]);
+        offsprings[i+1]->transform(pop[i]);
+    }
+    swap_pop();
 }
 
 void World::step(){
     select();
-    std::uniform_int_distribution<int> random_donor(0, N - 1);
+    mutate();
+    transform();
+    /*std::uniform_int_distribution<int> random_donor(0, N - 1);
     for(int i = 0; i < N; i++){
         offsprings[i]->mutate();
         //offsprings[i]->transform(pop[randint(N)]);
         offsprings[i]->transform(pop[random_donor(generator)]);
     }
     // swap(pop, offsprings);
-    swap_pop();
+    swap_pop();*/
     time += 1;
 }
 

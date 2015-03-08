@@ -92,8 +92,10 @@ public:
     Organism ** offsprings; // temporary population
     
     void swap_pop(); // swap pop and offsprings
-    
     void select();
+    void mutate();
+    void transform();
+    
     void step();
     void run(int steps, int interval);
     
