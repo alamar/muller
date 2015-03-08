@@ -12,6 +12,8 @@ import time
 
 import os, sys
 
+import muller
+
 # Muller's ratchet in finite population, genes have "good" and "bad" states (1 or 0),
 # fitness is (1 + fb) ** E, where E is number of good genes
 
@@ -30,94 +32,64 @@ import os, sys
 # 
 # 
 
+default_params = {"steps" : 200, "N" : 100, "G" : 100, "M" : 0.015, "B" : 0.1, "fb" : 0.05, "T" : 0., "Tmut" : 0., "Mmut" : 0., "Ttransform" : 1., "C" : 0., "Binitial" : -1., "interval" : 1, "seed" : -1, "verbose" : False}
 
 class population:
+    def __init__(self, **kwargs):
+        
+        # filling attributes at once instead of mentioning each one
+        # if parameter is not present in arguments then it will be taken from default_params
+        for k, v in default_params.iteritems():
+            setattr(self, k, v)
+        for k, v in kwargs.iteritems():
+            setattr(self, k, v)
+        
+        self.paramline = " ".join(map(str, (self.N, self.G, self.B, self.fb, self.M, self.Mmut, self.T, self.Tmut, self.Ttransform, self.C, self.Binitial, self.interval, self.seed))) # parameters needed for running c++ executable
+        
+        # if seed < 0:
+            # pass
     
-    def __init__(self, steps = 200, N = 100, G = 100, M = 0.015, B = 0.1, fb = 0.05, T = 0., Tmut = 0., Mmut = 0., Ttransform = 1., C = 0., Binitial = -1., interval = 1, seed = -1, verbose = False):
-        
-        self.steps = steps
-        self.interval = interval
-        self.verbose = verbose
-        self.seed = seed
-        
-        self.N = N
-        self.G = G
-        self.M = M
-        self.B = B
-        self.fb = fb
-        self.T = T
-        self.Tmut = Tmut
-        self.Mmut = Mmut
-        self.Ttransform = Ttransform
-        self.C = C
-        
-        self.paramline = " {} {} {} {} {} {} {} {} {} {} {} {} {} ".format(N, G, B, fb, M, Mmut, T, Tmut, Ttransform, C, Binitial, interval, seed)
-        #self.paramline = " " + N +  " " + G + " " + B + " " + fb + " " + M + " " + Mmut + " " + T + " " + Tmut + " " + Ttransform + " "
-        #commandline = "./cpp_gpg " + paramline
-        #self.run()
-    
-    def readstat(self):
-        self.stat = {
-            "time": [],
-            "Eavg": [], "Estd": [], "Emax": [], "Emin": [],
-            "Favg": [], "Fstd": [], "Fmax": [], "Fmin": [],
-            "Mavg": [], "Mstd": [], "Mmax": [], "Mmin": [],
-            "Tavg": [], "Tstd": [], "Tmax": [], "Tmin": [],
-            "Tplus": [],
-            "EGavg": [], "EGstd": [], "EGmax": [], "EGmin": [],
-            }
+    def readstat(self, text):
+        # text is content of statistics file or output of modeling program
+        # TODO: generally move to csv, scipy.io or another module (also use bzip2)
         #reads = [[] for i in xrange(len(self.stat))]
-        s = self.output.splitlines()
+        s = text.splitlines()
         for i in xrange(len(s)):
             if s[i] == "Statistics begin":
                 begin = i
                 break
+        
+        # parsing header representing statistic variable names
+        self.stat = {}
+        self.statnames = []
+        for statname in s[begin+1].split():
+            self.stat[statname] = []
+            self.statnames.append(statname)
+            
         for line in s[begin+2:]:
             s = line.split()
-            self.stat["time"].append(float(s[0]))
-            
-            self.stat["Eavg"].append(float(s[1]))
-            self.stat["Estd"].append(float(s[2]))
-            self.stat["Emin"].append(float(s[3]))
-            self.stat["Emax"].append(float(s[4]))
-            
-            self.stat["Favg"].append(float(s[5]))
-            self.stat["Fstd"].append(float(s[6]))
-            self.stat["Fmin"].append(float(s[7]))
-            self.stat["Fmax"].append(float(s[8]))
-            
-            self.stat["Mavg"].append(float(s[9]))
-            self.stat["Mstd"].append(float(s[10]))
-            self.stat["Mmin"].append(float(s[11]))
-            self.stat["Mmax"].append(float(s[12]))
-            
-            self.stat["Tavg"].append(float(s[13]))
-            self.stat["Tstd"].append(float(s[14]))
-            self.stat["Tmin"].append(float(s[15]))
-            self.stat["Tmax"].append(float(s[16]))
-            
-            self.stat["Tplus"].append(float(s[17]))
-    
-            self.stat["EGavg"].append(float(s[18]))
-            self.stat["EGstd"].append(float(s[19]))
-            self.stat["EGmin"].append(float(s[20]))
-            self.stat["EGmax"].append(float(s[21]))
+            for i in xrange(len(s)):
+                self.stat[self.statnames[i]].append(float(s[i]))
+        
+        for k, v in self.stat.iteritems():
+            self.stat[k] = array(v) # for memory economy!
+        
             
     def run(self, steps = None):
         if steps:
             self.steps = steps
-        #commandline = 
-        #print self.paramline
+        # commandline = 
+        # print self.paramline
         command = "nice -n 19 ./muller "
         if sys.platform == "win32":
             command = "muller.exe "
-            self.output = subprocess.check_output(command + str(self.steps) + self.paramline)
+            self.output = subprocess.check_output(command + str(self.steps) + " " + self.paramline)
         else:
             command = "nice -n 19 ./muller "
-            self.output = commands.getoutput(command + str(self.steps) + self.paramline)
+            self.output = commands.getoutput(command + str(self.steps) + " " + self.paramline)
         if self.verbose:
             print self.output
-        self.readstat()
+        self.readstat(self.output)
     
     def save(self, name = "trajectories"):
         if not hasattr(self, "output"):
@@ -132,7 +104,6 @@ class population:
         f.write(self.output)
         f.close()
 
-    
     
 class batch:
     
@@ -161,7 +132,7 @@ class batch:
         if verbose:
             print len(cases), "cases: ", cases, len(cases)
         
-    def run(self, steps = 20000, resume = False, verbose = True):
+    def run(self, steps = 20000, verbose = True):
         if verbose:
             print "Running", len(self.models), "tasks, here will be shown some average values over last half of simulation."
         start_t = time.time()
@@ -289,40 +260,6 @@ def fisher_plot(model, dt = 10):
 
 
 
-def old_fisher_plot(model, dt = 10):
-    # wrong calculation!!!11
-    # dt is averaging interval
-    di = dt / model.interval
-    dFdt = difference(model.stat["Favg"], di) / dt # actual fitness difference after one step
-    Fvar = window_avg(array(model.stat["Fstd"]) ** 2, di) # на больших G отчего-то получается линейный график при первой степени, сиречь от стандартного отклонения!
-    
-    # E = window_avg(array(model.stat["Eavg"]), di)
-    # dE = (model.B - E) * model.M # for one generation!
-    F = window_avg(array(model.stat["Favg"]), di)
-    Fnext = F + Fvar # fitness after one selection round according to Fisher's law
-    Enext = reverse_fitness_function(model.fb, model.G, Fnext)
-    dE = (model.B - Enext) * model.M # change of E due to mutations for one generation
-
-    mut_pressure = Fnext - fitness_function(model.fb, model.G, Enext + dE) # correction for mutation pressure
-    # mut_pressure = fitness_function(model.fb, model.G, E + dE) - fitness_function(model.fb, model.G, E) # correction for mutation pressure
-
-    dFdt_theor = fitness_function(model.fb, model.G, Enext + dE) - F # fitness after one round of selection and mutation according to Fisher's law
-    
-    figure()
-    plot(Fvar, dFdt, ".")
-    plot(Fvar, dFdt_theor, ".")
-    plot(Fvar, dFdt - dFdt_theor, ".")
-    # plot(Fvar, dFdt - mut_pressure, ".")
-    plot(Fvar, -mut_pressure, ".")
-    plot(Fvar, Fvar, ".")
-    xlabel("fitness variance")
-    ylabel("fitness change")
-    title("Fisher plot of " + str(model.params))
-    
-    figure()
-    plot(F, mut_pressure, ".")
-    
-   
 def fisher_test(world, steps):
     """Test for selection and mutation processes. Mutation ok (as of 3.03.2015), selection is 15 times stronger than theoretical :( """
     for i in xrange(steps):
