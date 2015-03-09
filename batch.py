@@ -12,6 +12,8 @@ import time
 
 import os, sys
 
+import bz2
+
 import muller
 
 # Muller's ratchet in finite population, genes have "good" and "bad" states (1 or 0),
@@ -39,12 +41,12 @@ class population:
         
         # filling attributes at once instead of mentioning each one
         # if parameter is not present in arguments then it will be taken from default_params
-        for k, v in default_params.iteritems():
-            setattr(self, k, v)
-        for k, v in kwargs.iteritems():
+        self.params = default_params
+        self.params.update(kwargs)
+        for k, v in self.params.iteritems():
             setattr(self, k, v)
         
-        self.paramline = " ".join(map(str, (self.N, self.G, self.B, self.fb, self.M, self.Mmut, self.T, self.Tmut, self.Ttransform, self.C, self.Binitial, self.interval, self.seed))) # parameters needed for running c++ executable
+        self.paramline = " " + " ".join(map(str, (self.N, self.G, self.B, self.fb, self.M, self.Mmut, self.T, self.Tmut, self.Ttransform, self.C, self.Binitial, self.interval, self.seed))) # parameters needed for running c++ executable
         
         # if seed < 0:
             # pass
@@ -100,8 +102,8 @@ class population:
             return
         if not os.path.exists(name):
             os.mkdir(name)
-        f = open(name + "/" + time.strftime("%Y-%m-%d_%H-%M-%S") + self.paramline + ".txt", "w")
-        f.write(self.output)
+        f = open(name + "/" + time.strftime("%Y-%m-%d_%H-%M-%S") + self.paramline + ".txt.bz2", "w")
+        f.write(bz2.compress(self.output))
         f.close()
 
     
