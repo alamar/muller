@@ -36,7 +36,17 @@ import muller
 
 default_params = {"steps" : 200, "N" : 100, "G" : 100, "M" : 0.015, "B" : 0.1, "fb" : 0.05, "T" : 0., "Tmut" : 0., "Mmut" : 0., "Ttransform" : 1., "C" : 0., "Binitial" : -1., "interval" : 1, "seed" : -1, "verbose" : False}
 
+# extra_param_names = ["steps", "interval", "verbose"] # params that are not params of the model so should not be passed into model initialization
+
+swigworld_param_names = ["N", "G", "B", "fb", "M", "Mmut", "T", "Tmut", "Ttransform", "C", "Binitial", "seed"] # parameters for C++/swig World object initialization - unfortunately swig does not mention parameter names
+
+exe_param_names = ["N", "G", "B", "fb", "M", "Mmut", "T", "Tmut", "Ttransform", "C", "Binitial", "interval", "seed"] # parameters needed for running c++ executable
+
+
+stat_names = ["time", "Eavg", "Estd", "Emin", "Emax", "Favg", "Fstd", "Fmin", "Fmax", "Mavg", "Mstd", "Mmin", "Mmax", "Tavg", "Tstd", "Tmin", "Tmax", "Tplus", "EGavg", "EGstd", "EGmin", "EGmax"]
+
 class population:
+    
     def __init__(self, **kwargs):
         
         # filling attributes at once instead of mentioning each one
@@ -46,7 +56,10 @@ class population:
         for k, v in self.params.iteritems():
             setattr(self, k, v)
         
-        self.paramline = " " + " ".join(map(str, (self.N, self.G, self.B, self.fb, self.M, self.Mmut, self.T, self.Tmut, self.Ttransform, self.C, self.Binitial, self.interval, self.seed))) # parameters needed for running c++ executable
+        # self.paramline = " " + " ".join(map(str, (self.N, self.G, self.B, self.fb, self.M, self.Mmut, self.T, self.Tmut, self.Ttransform, self.C, self.Binitial, self.interval, self.seed))) # parameters needed for running c++ executable
+        self.paramline = ""
+        for p in exe_param_names:
+            self.paramline += (" " + str(self.params[p]))
         
         # if seed < 0:
             # pass
@@ -106,7 +119,34 @@ class population:
         f.write(bz2.compress(self.output))
         f.close()
 
+class population_swig(population):
     
+    def __init__(self, **kwargs):
+        # super(type(self), self).__init__(**kwargs)
+        population.__init__(self, **kwargs)
+        self.model_params = []
+        for p in swigworld_param_names:
+            self.model_params.append(self.params[p])
+        self.model = muller.World(*self.model_params)
+        
+        # statistics initialization
+        self.stat = {s: [] for s in stat_names}
+        
+    def append_stat(self):
+        for k, v in self.stat.iteritems():
+            # self.stat[k].append(getattr(self.model, k))
+            v.append(getattr(self.model, k))
+        
+    
+    def run(self, steps = None):
+        if steps:
+            self.steps = steps
+        for i in xrange(self.steps):
+            self.model.step()
+            if self.model.time % self.interval == 0:
+                self.model.calc_stat()
+                self.append_stat()
+     
 class batch:
     
     def __init__(self, params = {}, constants = {}, verbose = True):
@@ -128,7 +168,7 @@ class batch:
                     a[k] = vv
                     cc.append(a)
             cases = cc
-        self.models = [population(**c) for c in cases]
+        self.models = [population_swig(**c) for c in cases]
         for i in xrange(len(self.models)):
             self.models[i].params = cases[i]
         if verbose:
