@@ -170,6 +170,39 @@ class population_swig(population):
             if self.model.time % self.interval == 0:
                 self.append_stat()
      
+
+
+def readstat(text):
+    # text is content of statistics file or output of modeling program
+    # reads parameters as dictionary!
+    # returns params, stats
+    # TODO: generally move to csv, scipy.io or another module (also use bzip2)
+    s = text.splitlines()
+    params = {}
+    for i in xrange(len(s)):
+        if s[i][0] == "{":
+            params = eval(s[i], {}, {})
+        if s[i] == "Statistics begin":
+            begin = i
+            break
+    
+    # parsing header representing statistic variable names
+    stat = {}
+    statnames = []
+    for statname in s[begin+1].split():
+        stat[statname] = []
+        statnames.append(statname)
+        
+    for line in s[begin+2:]:
+        s = line.split()
+        for i in xrange(len(s)):
+            stat[statnames[i]].append(float(s[i]))
+    
+    for k, v in stat.iteritems():
+        stat[k] = array(v) # for memory economy!
+    return params, stat
+
+
 class batch:
     
     def __init__(self, params = {}, constants = {}, verbose = True):
