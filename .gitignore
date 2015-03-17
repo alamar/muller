@@ -12,4 +12,6 @@ muller.py
 muller_wrap.cpp
 *ipython_log.py*
 *.ipynb
+*.htm*
+*.log
 *stackdump
