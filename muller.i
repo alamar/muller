@@ -12,12 +12,22 @@ static int myErr = 0; // flag to save error state
 %include "exception.i"
 %include "macros.i"
 
+// typedefs
 
 // %array_class(float, floatArray);
 %array_class(bool, boolArray);
+%array_class(int, intArray);
 
-ARRAYMEMBER(Organism, genes, boolArray);
-ARRAYCLASS(Organism, genes, G, bool);
+%inline %{
+    typedef boolArray * boolp;
+%}
+%array_class(boolp, boolArrayArray);
+
+// class member wraps
+
+ARRAYMEMBER(Organism, good_genes, intArray);
+// ARRAYCLASS(Organism, genes, G, bool);
+ARRAYMEMBER(Organism, chromosomes, boolArrayArray); // NO RANGE CHECKING YET!!1
 
 %inline %{
     typedef Organism * pOrganism;

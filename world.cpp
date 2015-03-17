@@ -18,7 +18,7 @@ void World::select(){
         // pos = lower_bound(roulette.begin(), roulette.end(), frand() * total);
         pos = lower_bound(roulette.begin(), roulette.end(), random_roll(generator));
 //         cout << pos - roulette.begin() << "\n";
-        offsprings[i]->copy_from(pop[pos - roulette.begin()]);
+        offsprings[i]->replicate_from(pop[pos - roulette.begin()]);
     }
     swap_pop();
 }
@@ -31,7 +31,7 @@ void World::mutate(){ // mutate pop[]
 
 void World::transform(){ // transform pop[]
     for (int i = 0; i < N; i++){
-        offsprings[i]->copy_from(pop[i]);
+        offsprings[i]->replicate_from(pop[i]);
     }
     
     /* // alternative transformation - in one direction!
@@ -76,10 +76,34 @@ void World::run(int steps, int interval){
 }
 
 void World::calc_stat(){
+    
+#define STATZERO(name, inf, sup) name##avg = 0; name##std = 0; name##min = sup; name##max = inf;
+    
+    STATZERO(E, 0, G*X);
+    STATZERO(EE, 0, G);
+    STATZERO(X, 0, MAX_CHROMOSOMES);
+    STATZERO(F, 0, 1);
+    STATZERO(M, 0, 1);
+    STATZERO(T, 0, 1);
+    STATZERO(EG, 0, MAX_CHROMOSOMES*N);
+    
+    Tplus = 0.;
+    
+    /*
     Eavg = 0; // part of good genes
     Estd = 0;
     Emin = pop[0]->E;
     Emax = pop[0]->E;
+    
+    EEavg = 0; // part of effective good genes
+    EEstd = 0;
+    EEmin = pop[0]->EE;
+    EEmax = pop[0]->EE;
+    
+    Xavg = 0; // number of chromosomes
+    Xstd = 0;
+    Xmin = pop[0]->X;
+    Xmax = pop[0]->X;
     
     Favg = 0; // fitness
     Fstd = 0;
@@ -102,6 +126,7 @@ void World::calc_stat(){
     EGstd = 0;
     EGmin = N;
     EGmax = 0.;
+    */
     
     // int * EG = (int *) alloca(G * sizeof(int)); // int EG[G]
     int * EG = new int[G]; // int EG[G]
@@ -111,6 +136,21 @@ void World::calc_stat(){
     for(int i = 0; i < N; i++){
         real t;
         
+#define STATADD(name) \
+        t = pop[i]->name; \
+        name##avg += t; \
+        name##std += t * t; \
+        if (t < name##min) name##min = t; \
+        if (t > name##max) name##max = t;
+        
+        STATADD(X);
+        STATADD(E);
+        STATADD(EE);
+        STATADD(F);
+        STATADD(M);
+        STATADD(T);
+         
+        /*
         t = pop[i]->E;
         Eavg += t;
         Estd += t * t;
@@ -135,12 +175,30 @@ void World::calc_stat(){
         Tstd += t * t;
         if (t < Tmin) Tmin = t;
         if (t > Tmax) Tmax = t;
+        */
         
         Tplus += (pop[i]->T > 0.);
         
-        for(int j = 0; j < G; j++) EG[j] += pop[i]->genes[j];
+        for(int j = 0; j < G; j++) 
+            EG[j] += pop[i]->good_genes[j];
     }
+
+//    name##std = sqrt(abs((name##std - name##avg * name##avg / N) / (N - 1))) / (norm); \
     // https://en.wikipedia.org/wiki/Algebraic_formula_for_the_variance
+#define STATNORMALIZE(name, norm) \
+    name##avg = name##avg / (norm) / N; \
+    name##std = sqrt(abs((name##std / (norm * norm) - name##avg * name##avg * N) / (N - 1))); \
+    name##min = name##min / (norm); \
+    name##max = name##max / (norm);
+    
+    STATNORMALIZE(X, 1);
+    STATNORMALIZE(E, G * Xavg);
+    STATNORMALIZE(EE, G);
+    STATNORMALIZE(F, 1);
+    STATNORMALIZE(M, 1);
+    STATNORMALIZE(T, 1);
+    
+    /*
     Eavg = Eavg / G / N;
     Estd = sqrt(abs((Estd / G / G - N * Eavg * Eavg) / (N - 1)));
     Emin = Emin / G;
@@ -154,6 +212,7 @@ void World::calc_stat(){
     
     Tavg = Tavg / N;
     Tstd = sqrt(abs((Tstd - N * Tavg * Tavg) / (N - 1)));
+    */
     
     Tplus = Tplus / N;
     
@@ -197,7 +256,7 @@ void World::write_header(){
     "\n";
 }
 
-World::World(int _N, int _G, real _B, real _fb, real _M, real _Mmut, real _T, real _Tmut, bool _Ttransform, real _C, real _Binitial, long long int _seed){
+World::World(int _N, int _G, real _B, real _fb, real _M, real _Mmut, real _T, real _Tmut, bool _Ttransform, real _C, int _X, bool _even, bool _constantX, real _Binitial, long long int _seed){
     
     N = _N;
     G = _G;
@@ -221,8 +280,8 @@ World::World(int _N, int _G, real _B, real _fb, real _M, real _Mmut, real _T, re
     offsprings = new Organism * [N];
     
     for(int i = 0; i < N; i++){
-        pop[i] = new Organism(_G, _B, _fb, _M, _Mmut, _T, _Tmut, _Ttransform, _C, _Binitial, &generator);
-        offsprings[i] = new Organism(_G, _B, _fb, _M, _Mmut, _T, _Tmut, _Ttransform, _C, _Binitial, &generator);
+        pop[i] = new Organism(_G, _B, _fb, _M, _Mmut, _T, _Tmut, _Ttransform, _C, _X, _even, _constantX, _Binitial, &generator);
+        offsprings[i] = new Organism(_G, _B, _fb, _M, _Mmut, _T, _Tmut, _Ttransform, _C, _X, _even, _constantX, _Binitial, &generator);
     }
 }
 

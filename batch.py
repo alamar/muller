@@ -34,18 +34,26 @@ import muller
 # 
 # 
 
-default_params = {"steps" : 200, "N" : 100, "G" : 100, "M" : 0.015, "B" : 0.1, "fb" : 0.05, "T" : 0., "Tmut" : 0., "Mmut" : 0., "Ttransform" : 1., "C" : 0., "Binitial" : -1., "interval" : 1, "seed" : -1, "verbose" : False}
+default_params = {"steps" : 200, "N" : 100, "G" : 100, "M" : 0.015, "B" : 0.1, "fb" : 0.05, "T" : 0., "Tmut" : 0., "Mmut" : 0., "Ttransform" : 1., "C" : 0., "X" : 1, "even": True, "constantX": True, "Binitial" : -1., "interval" : 1, "seed" : -1, "verbose" : False}
 
 # extra_param_names = ["steps", "interval", "verbose"] # params that are not params of the model so should not be passed into model initialization
 
-swigworld_param_names = ["N", "G", "B", "fb", "M", "Mmut", "T", "Tmut", "Ttransform", "C", "Binitial", "seed"] # parameters for C++/swig World object initialization - unfortunately swig does not mention parameter names
+swigworld_param_names = ["N", "G", "B", "fb", "M", "Mmut", "T", "Tmut", "Ttransform", "C", "X", "even", "constantX", "Binitial", "seed"] # parameters for C++/swig World object initialization - unfortunately swig does not mention parameter names
 
 exe_param_names = ["N", "G", "B", "fb", "M", "Mmut", "T", "Tmut", "Ttransform", "C", "Binitial", "interval", "seed"] # parameters needed for running c++ executable
 
-stat_names = ["time", "Eavg", "Estd", "Emin", "Emax", "Favg", "Fstd", "Fmin", "Fmax", "Mavg", "Mstd", "Mmin", "Mmax", "Tavg", "Tstd", "Tmin", "Tmax", "Tplus", "EGavg", "EGstd", "EGmin", "EGmax"]
+def STATVARS(*names):
+    o = []
+    for name in names:
+        o.extend([name + "avg", name + "std", name + "min", name + "max"])
+    return o
+
+stat_names = ["time"] + STATVARS("E", "EE", "X", "F", "M", "T", "EG") + ["Tplus"]
+
+# stat_names = ["time", "Eavg", "Estd", "Emin", "Emax", "Favg", "Fstd", "Fmin", "Fmax", "Mavg", "Mstd", "Mmin", "Mmax", "Tavg", "Tstd", "Tmin", "Tmax", "Tplus", "EGavg", "EGstd", "EGmin", "EGmax"]
 
 
-class population:
+class population_exe:
     
     def __init__(self, **kwargs):
         
@@ -119,11 +127,11 @@ class population:
         f.write(bz2.compress(self.output))
         f.close()
 
-class population_swig(population):
+class population_swig(population_exe):
     
     def __init__(self, **kwargs):
         # super(type(self), self).__init__(**kwargs)
-        population.__init__(self, **kwargs)        
+        population_exe.__init__(self, **kwargs)        
         
         if self.Binitial < 0:
             self.params["Binitial"] = self.B
@@ -170,6 +178,7 @@ class population_swig(population):
             if self.model.time % self.interval == 0:
                 self.append_stat()
      
+population = population_swig
 
 
 def readstat(text):
@@ -329,9 +338,9 @@ def fisher_plot(model, dt = 10):
     di = max(dt / model.interval, 1)
     dt = model.interval * di
     
-    E0 = array(model.stat["Eavg"]) * model.G
+    E0 = array(model.stat["EEavg"]) * model.G
     F0 = log_fitness_function(model.fb, model.G, E0) # logarithmic fitness
-    Fvar0 = (array(model.stat["Estd"]) * model.G * log(1 - model.fb)) ** 2 # variance of the above
+    Fvar0 = (array(model.stat["EEstd"]) * model.G * log(1 - model.fb)) ** 2 # variance of the above
     
     E = window_avg(E0, di)
     F = window_avg(F0, di)
@@ -380,22 +389,22 @@ def fisher_test(world, steps):
         print "                        Actual fitness change: ", F0 - F
         print "Fitness after: ", F0
         
-        evec0 = [o.E for o in world]
+        evec0 = [o.EE for o in world]
         
         # for o in world: o.mutate()
         world.mutate()
         
         fvec1 = log([o.F for o in world])
-        evec1 = [o.E for o in world]
+        evec1 = [o.EE for o in world]
         
         dEpred = (world.B - average(evec0) / world.G) * world.M * world.G
         F0calc = log_fitness_function(world.fb, world.G, average(evec0)) # this is wrong cos fitness is nonlinear function of E, so average fitness is not fitness of average E
         F1calc = log_fitness_function(world.fb, world.G, average(evec0) + dEpred) # wrong ^^
         print ""
         print "Mutation:"
-        print "Good genes (E) before: ", average(evec0)
-        print "               Predicted E change: ", dEpred
-        print "                  Actual E change: ", (average(evec1) - average(evec0))
+        print "Good genes (EE) before: ", average(evec0)
+        print "               Predicted EE change: ", dEpred
+        print "                  Actual EE change: ", (average(evec1) - average(evec0))
         print "           Fitness before: ", average(fvec0)
         print "Calculated fitness before: ", F0calc
         print "         Predicted fitness change: ", F1calc - F0calc
@@ -403,11 +412,11 @@ def fisher_test(world, steps):
  
 def selection_test(world, steps):
     """Test for selection process. Returns fitnesses, numbers of children, theoretical numbers of children. Example usage:
-        
-        w = muller.World(1000, 100, 0.1, 0.04, 0.01, 0., 0.05, 0., 1., 0., 0.1, 879958415)
+
+        p0 = batch.population(N = 1000, G = 100)
         f, c, p = batch.selection_test(w, 10000); figure(); plot(f, c, "."); plot(f, p); show()
         
-        Passed ok (as of 3.03.2015)"""
+        Passed ok (as of 17.03.2015)"""
     f = [o.F for o in world] # fitnesses
     children = [0 for o in world]
     for i in xrange(len(world)):
@@ -424,7 +433,7 @@ def selection_test(world, steps):
 
 
 def mutation_test(world, steps, B = None):
-    """Test for mutational process. Passed ok (as of 3.03.2015)"""
+    """Test for mutational process. Passed ok (as of 17.03.2015)"""
     a = world[0]
     o = world.offsprings[0]
     B0 = a.B
@@ -436,25 +445,31 @@ def mutation_test(world, steps, B = None):
     d = 0 # number of decrements of genes (deleterious mutations)
     M = a.M
     E0 = a.E
+    EE = a.EE
     G = a.G
+    X = a.X
     e0 = 1. * E0 / G
     for i in xrange(steps):
         o.copy_from(a)
         o.mutate()
-        for j in xrange(len(o)):
-            if o[j] and not a[j]: u += 1
-            if a[j] and not o[j]: d += 1
+        for x in xrange(o.X):
+            for j in xrange(o.G):
+                if o.chromosomes[x][j] and not a.chromosomes[x][j]: u += 1
+                if a.chromosomes[x][j] and not o.chromosomes[x][j]: d += 1
     print "Statistics of ", steps, " mutations of ", G, " genes (total ", G * steps, "mutations):"
     print "E0: ", E0
     print "e0: ", e0
     print "G: ", G
+    print "X: ", X
+    print "EE: ", EE
     print "M: ", M
     print "B: ", B
     print "Beneficial mutations : ", u
     print "Deleterious mutations: ", d
-    print "Predicted beneficial mutations  (G - E0) * M * B * steps: ", (G - E0) * M * B * steps
+    print "Predicted beneficial mutations  (G * X - E0) * M * B * steps: ", (G * X - E0) * M * B * steps
     print "Predicted deleterious mutations E0 * M * (1 - B) * steps: ", E0 * M * (1 - B) * steps
-        
+    print ""
+    
     a.B = B0
     o.B = B0
 

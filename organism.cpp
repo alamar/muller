@@ -1,5 +1,28 @@
 #include "world.h"
 
+// uniformly select n items from N items, out[i] is whether i-th item is selected
+void select_n_from(int n, int N, bool * out, std::default_random_engine * generator) {
+    for(int i = 0; i < N; i++) out[i] = false;
+    std::uniform_int_distribution<int> random_position(0, N - 1);
+    for(int i = 0; i < n; i++) {
+        int pos = random_position(*generator);
+        while(out[pos] == true) {
+            // pos = randint(G);
+            pos = random_position(*generator);
+        }
+        out[pos] = true;
+    }
+}
+
+// uniformly select items from N items with probability p
+// out[i] is whether i-th item is selected
+int select_binomial_from(real p, int N, bool * out, std::default_random_engine * generator) {
+    int selected_number = std::binomial_distribution<int>(N, p)(*generator);
+        // TODO: implement dumb selection (alternative to (M < 0.11) & (G > 40) or ifdef BINOMIAL)
+    select_n_from(selected_number, N, out, generator);
+    return selected_number;
+}
+
 
 void Organism::mutate(){
     
@@ -7,7 +30,7 @@ void Organism::mutate(){
     std::bernoulli_distribution whether_to_mutate(M);
     if (M > 0) {
         
-        
+        // TODO: migrate to select_binomial_from()
 #ifdef BINOMIAL
         if ((M < 0.11) & (G > 40)) {
             // std::binomial_distribution<int> distribution(G, M);
@@ -37,11 +60,11 @@ void Organism::mutate(){
         } else 
 #endif
         {
-            for(int i = 0; i < G; i++){
+            for(int x = 0; x < X; x++) for(int i = 0; i < G; i++) {
                 // if (randbool(M)){
                 if (whether_to_mutate(*generator)){
                     // genes[i] = randbool(B);
-                    genes[i] = random_mutation(*generator);
+                    chromosomes[x][i] = random_mutation(*generator);
                 }
             };
         }
@@ -58,8 +81,11 @@ void Organism::mutate(){
 
 void Organism::transform(Organism * donor){
     std::bernoulli_distribution whether_to_transform(T);
+    std::uniform_int_distribution<int> random_chromosome(0, donor->X - 1);
+
     if (T > 0){
         
+        // TODO: migrate to select_binomial_from()
 #ifdef BINOMIAL
         if ((T < 0.11) & (G > 40)) {
             std::binomial_distribution<int> distribution(G, T);
@@ -85,10 +111,10 @@ void Organism::transform(Organism * donor){
         } else 
 #endif
         {
-            for(int i = 0; i < G; i++){
+            for(int x = 0; x < X; x++) for(int i = 0; i < G; i++){
                 // if (randbool(T)){ 
                 if (whether_to_transform(*generator)){ 
-                    genes[i] = donor->genes[i];
+                    chromosomes[x][i] = donor->chromosomes[random_chromosome(*generator)][i]; // may be slow!
                 };
             };
         }
@@ -103,13 +129,54 @@ void Organism::transform(Organism * donor){
     }
 };
 
+void Organism::change_ploidy(int Xnew) {
+    if (Xnew != X) {
+        if (Xnew > X) {
+            if (Xnew > MAX_CHROMOSOMES) Xnew = MAX_CHROMOSOMES;
+            for(int x = X; x < Xnew; x++)
+                chromosomes[x] = new bool [G];
+        } else {
+            if (Xnew < 1) Xnew = 1;
+            for(int x = Xnew; x < X; x++)
+                delete chromosomes[x];
+        }
+        X = Xnew;
+    }
+}
+
+void Organism::uneven_division_from(Organism * parent) {
+    int Xnew = 0;
+    bool * chromosomes_replicated = new bool[X * 2]; // firstly genome is replicated, then approximately half of chromosomes are chosen
+    if (constantX)
+        select_n_from(X, X * 2, chromosomes_replicated, generator);
+    else
+        Xnew = select_binomial_from(0.5, X * 2, chromosomes_replicated, generator);
+    int to = 0;
+    for (int from = 0; from < X * 2; from++) {
+        if (chromosomes_replicated[from]) {
+            copy(parent->chromosomes[from / 2], parent->chromosomes[from / 2] + G, chromosomes[to]);
+            to += 1;
+        }
+    }
+}
+
+
 void Organism::copy_from(Organism * donor){
     
     // for(int i = 0; i < G; i++){
         // genes[i] = donor->genes[i];
     // };
-	copy(donor->genes, donor->genes + G, genes);
-    
+    // copy(donor->genes, donor->genes + G, genes);
+
+    change_ploidy(donor -> X);
+    for(int x = 0; x < X; x++)
+        copy(donor->chromosomes[x], donor->chromosomes[x] + G, chromosomes[x]);
+    E = donor->E;
+    EE = donor->EE;
+    F = donor->F;
+
+    // X = donor->X; // already set
+    even = donor->even;
     G = donor->G;
     B = donor->B;
     fb = donor->fb;
@@ -120,24 +187,56 @@ void Organism::copy_from(Organism * donor){
     Ttransform = donor->Ttransform;
     C = donor->C;
     
-    E = donor->E;
-    F = donor->F;
+};
+
+
+void Organism::replicate_from(Organism * donor){
+    
+    if (donor->even) {
+        copy_from(donor);
+    } else {
+        uneven_division_from(donor);
+        calc_fitness();
+    }
+    
+    even = donor->even;
+    G = donor->G;
+    B = donor->B;
+    fb = donor->fb;
+    M = donor->M;
+    Mmut = donor->Mmut;
+    T = donor->T;
+    Tmut = donor->Tmut;
+    Ttransform = donor->Ttransform;
+    C = donor->C;
+    
 };
 
 void Organism::calc_fitness(){
     
     E = 0;
-    for(int i = 0; i < G; i++){
+    EE = 0;
+    for(int i = 0; i < G; i++) {
+        good_genes[i] = 0;
+        int g = 0; // good_genes[i]
+        for(int x = 0; x < X; x++)
+            g += (int) chromosomes[x][i];
 //         cout  << genes[i] << " ";
-        E += (int)genes[i];
-    };
-    F = pow((1 - fb), (G - E)); // multiplicative fitness, maximum fitness is always 1
+        EE += (g > 0);
+        E += g;
+        good_genes[i] = g;
+    }
+    F = pow((1 - fb), (G - EE)); // multiplicative fitness, maximum fitness is always 1
     if (T > 0.) F = F * (1 - C);
 };
 
-Organism::Organism(int _G, real _B, real _fb, real _M, real _Mmut, real _T, real _Tmut, bool _Ttransform, real _C, real _Binitial, std::default_random_engine * _generator){
+Organism::Organism(int _G, real _B, real _fb, real _M, real _Mmut, real _T, real _Tmut, bool _Ttransform, real _C, int _X, bool _even, bool _constantX, real _Binitial, std::default_random_engine * _generator){
     
     G = _G;
+    X = _X;
+    even = _even;
+    constantX = _constantX;
+    
     B = _B;
     fb = _fb;
     M = _M;
@@ -149,7 +248,12 @@ Organism::Organism(int _G, real _B, real _fb, real _M, real _Mmut, real _T, real
 
     generator = _generator;
     
-    genes = new bool[G];
+    good_genes = new int[G];
+    chromosomes = new bool * [G];
+    for(int x = 0; x < X; x++) {
+        chromosomes[x] = new bool [G];
+    }
+    
     M = 1.;
     B = _Binitial;
 //     cout << "B: " << B << " ";

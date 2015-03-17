@@ -1,7 +1,8 @@
 #TARGET=$(shell basename `pwd`)
 TARGET = muller
 #SOURCES=$(wildcard *.cpp)
-SOURCES= main.cpp organism.cpp world.cpp
+# SOURCES= main.cpp organism.cpp world.cpp
+SOURCES= organism.cpp world.cpp
 OBJECTS=$(SOURCES:%.cpp=%.o)
 
 SWIGFILE = $(TARGET).i
@@ -20,7 +21,8 @@ CXXFLAGS+= -fPIC -I/usr/include/python2.7
 # LDFLAGS+= -lncurses -lblas -g -pg
 LDFLAGS+= -g -pg
 
-all: $(TARGET) $(PYTARGET)
+# all: $(TARGET) $(PYTARGET)
+all: $(PYTARGET)
 
 $(OBJECTS): $(SOURCES)
 
