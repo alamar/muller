@@ -242,11 +242,11 @@ class Cache:
     
     def save(self, pop):
         "saves trajectory file and registers it in index file"
-        if os.path.isfile(datadir):
-            print "file", datadir, "exists! delete it or save in another place."
+        if os.path.isfile(self.datadir):
+            print "file", self.datadir, "exists! delete it or save in another place."
             return
-        if not os.path.exists(datadir):
-            os.mkdir(datadir)
+        if not os.path.exists(self.datadir):
+            os.mkdir(self.datadir)
         f = open(self.datadir + "/" + filename , "w")
         f.write(bz2.compress(pop.writestat()))
         f.close()
