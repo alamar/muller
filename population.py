@@ -303,6 +303,8 @@ class population_cached(population_swig):
         if data:
             self._params, self._stat = data
             self.params, self.stat = self._params, self._stat
+            for k, v in self.params.iteritems():
+                setattr(self, k, v)
             print "Loading data from file"
         else:
             population_swig.__init__(self, **kwargs)
@@ -327,7 +329,7 @@ class population_cached(population_swig):
             else:
                 self.params, self.stat = self._params, self._stat
                 for k, v in self.stat.iteritems():
-                    v = v[:(steps % self.params["interval"])]
+                    v = v[:(steps % self.interval)]
         else:
             self.params, self.stat = self._params, self._stat
 
