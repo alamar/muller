@@ -409,7 +409,57 @@ def fisher_test(world, steps):
         print "Calculated fitness before: ", F0calc
         print "         Predicted fitness change: ", F1calc - F0calc
         print "            Actual fitness change: ", average(fvec1) - F0
- 
+
+def bools_to_int(a):
+    o = 0
+    for i in a:
+        o = o * 2 + i
+    return o
+
+def int_to_bools(i, length = 0):
+    o = []
+    while i > 0:
+        o = [bool(i % 2)] + o
+        i = i / 2
+    while length > len(o):
+        o = [False] + o
+    return o
+
+def replication_test(world, steps, even = False, constantX = False):
+    """test for uneven division (amitosis) with constant or variable number of chromosomes"""
+    a = world[0]
+    o = world.offsprings[0]
+    X = a.X
+    G = a.G
+    a.even = even
+    a.constantX = constantX
+    print "Initial number of chromosomes X = ", X
+    for i in xrange(steps):
+        for x in xrange(a.X):
+            xb = int_to_bools(x, G)
+            for j in xrange(G):
+                a.chromosomes[x][j] = xb[j]
+        o.replicate_from(a)
+        print o.X, " chromosomes: ",
+        for x in xrange(o.X):
+            xl = [o.chromosomes[x][j] for j in xrange(G)]
+            print bools_to_int(xl),
+        t = a
+        a = o
+        o = t
+        print ""
+
+def replication_alloc_test(world, steps, even = False, constantX = False):
+    a = world[0]
+    o = world.offsprings[0]
+    X = a.X
+    G = a.G
+    a.even = even
+    a.constantX = constantX
+    for i in xrange(steps):
+        o.replicate_from(a)
+    
+
 def selection_test(world, steps):
     """Test for selection process. Returns fitnesses, numbers of children, theoretical numbers of children. Example usage:
 

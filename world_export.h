@@ -67,7 +67,7 @@ public:
     
     void copy_from(Organism * donor); // simple copy
     void uneven_division_from(Organism * parent);
-    void change_ploidy(int Xnew);
+    int  change_ploidy(int Xnew);
     void replicate_from(Organism * donor); // replication according to genetic program
     
     Organism(int _G, real _B, real _fb, real _M, real _Mmut, real _T, real _Tmut, bool _Ttransform, real _C, int _X, bool _even, bool _constantX, real _Binitial, std::default_random_engine * _generator);

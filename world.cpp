@@ -31,7 +31,7 @@ void World::mutate(){ // mutate pop[]
 
 void World::transform(){ // transform pop[]
     for (int i = 0; i < N; i++){
-        offsprings[i]->replicate_from(pop[i]);
+        offsprings[i]->copy_from(pop[i]);
     }
     
     /* // alternative transformation - in one direction!
@@ -79,7 +79,7 @@ void World::calc_stat(){
     
 #define STATZERO(name, inf, sup) name##avg = 0; name##std = 0; name##min = sup; name##max = inf;
     
-    STATZERO(E, 0, G*X);
+    STATZERO(E, 0, MAX_CHROMOSOMES*G);
     STATZERO(EE, 0, G);
     STATZERO(X, 0, MAX_CHROMOSOMES);
     STATZERO(F, 0, 1);
@@ -260,6 +260,7 @@ World::World(int _N, int _G, real _B, real _fb, real _M, real _Mmut, real _T, re
     
     N = _N;
     G = _G;
+    X = _X;
     B = _B;
     fb = _fb;
     M = _M;
@@ -268,6 +269,8 @@ World::World(int _N, int _G, real _B, real _fb, real _M, real _Mmut, real _T, re
     Tmut = _Tmut;
     Ttransform = _Ttransform;
     C = _C;
+    even = _even;
+    constantX = _constantX;
     Binitial = _Binitial;
     
     time = 0;

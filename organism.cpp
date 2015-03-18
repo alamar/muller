@@ -129,7 +129,7 @@ void Organism::transform(Organism * donor){
     }
 };
 
-void Organism::change_ploidy(int Xnew) {
+int Organism::change_ploidy(int Xnew) {
     if (Xnew != X) {
         if (Xnew > X) {
             if (Xnew > MAX_CHROMOSOMES) Xnew = MAX_CHROMOSOMES;
@@ -142,22 +142,31 @@ void Organism::change_ploidy(int Xnew) {
         }
         X = Xnew;
     }
+    return X;
 }
 
 void Organism::uneven_division_from(Organism * parent) {
-    int Xnew = 0;
-    bool * chromosomes_replicated = new bool[X * 2]; // firstly genome is replicated, then approximately half of chromosomes are chosen
-    if (constantX)
-        select_n_from(X, X * 2, chromosomes_replicated, generator);
-    else
-        Xnew = select_binomial_from(0.5, X * 2, chromosomes_replicated, generator);
+    int Xold = parent -> X;
+    int Xnew = parent -> X;
+    bool * chromosomes_replicated = new bool[Xold * 2]; // firstly genome is replicated, then approximately half of chromosomes are chosen
+    if ( ! (parent -> constantX)) {
+        Xnew = std::binomial_distribution<int>(Xold * 2, 0.5)(*generator);
+    }
+    Xnew = change_ploidy(Xnew);
+    select_n_from(Xnew, Xold * 2, chromosomes_replicated, generator);
+    /*
+    if (Xnew == 0) { // then we replicate only one random chromosome
+        select_n_from(1, Xold * 2, chromosomes_replicated, generator);
+    }
+    */
     int to = 0;
-    for (int from = 0; from < X * 2; from++) {
+    for (int from = 0; from < Xold * 2; from++) {
         if (chromosomes_replicated[from]) {
             copy(parent->chromosomes[from / 2], parent->chromosomes[from / 2] + G, chromosomes[to]);
             to += 1;
-        }
+        }  
     }
+    delete chromosomes_replicated;
 }
 
 
@@ -177,6 +186,7 @@ void Organism::copy_from(Organism * donor){
 
     // X = donor->X; // already set
     even = donor->even;
+    constantX = donor->constantX;
     G = donor->G;
     B = donor->B;
     fb = donor->fb;
@@ -194,12 +204,14 @@ void Organism::replicate_from(Organism * donor){
     
     if (donor->even) {
         copy_from(donor);
+        return;
     } else {
         uneven_division_from(donor);
         calc_fitness();
     }
     
     even = donor->even;
+    constantX = donor->constantX;
     G = donor->G;
     B = donor->B;
     fb = donor->fb;
