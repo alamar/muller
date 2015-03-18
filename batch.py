@@ -46,7 +46,8 @@ class batch:
             t = end - start
             
             if verbose:
-                print t, "seconds, fitness:", average(m.stat["Favg"][(steps/2):]), ", good genes:", average(m.stat["Eavg"][(steps/2):]), ", transformation:",  average(m.stat["Tavg"][(steps/2):]), ", Tmax:", average(m.stat["Tmax"][(steps/2):])
+                begin = m.params["steps"] / 2
+                print t, "seconds, fitness:", average(m.stat["Favg"][begin:]), ", good genes:", average(m.stat["Eavg"][begin:]), ", transformation:",  average(m.stat["Tavg"][begin:]), ", Tmax:", average(m.stat["Tmax"][begin:])
         end_t = time.time()
         if verbose:
             print "Total time:", end_t - start_t, "seconds"
