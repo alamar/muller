@@ -248,13 +248,13 @@ class Cache:
         if not os.path.exists(self.datadir):
             os.mkdir(self.datadir)
         
+        paramline = "_".join(map(lambda n: str(pop.params[n]), swigworld_param_names))
         filename = time.strftime("%Y-%m-%d_%H-%M-%S_") + paramline + ".txt.bz2"
         f = open(self.datadir + "/" + filename , "w")
         f.write(bz2.compress(pop.writestat()))
         f.close()
         
         self.readindex()
-        paramline = "_".join(map(lambda n: str(pop.params[n]), swigworld_param_names))
         self.dataindex.append({"params" : pop.params, "stat_names": pop.stat_names, "file": filename})
         self.saveindex()
         
