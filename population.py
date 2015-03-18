@@ -327,7 +327,7 @@ class population_cached(population_swig):
             else:
                 self.params, self.stat = self._params, self._stat
                 for k, v in self.stat.iteritems():
-                    v = v[:(steps % interval)]
+                    v = v[:(steps % self.params["interval"])]
         else:
             self.params, self.stat = self._params, self._stat
 
