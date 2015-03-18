@@ -119,7 +119,7 @@ class population_exe:
             print "There are no results, run calculation first!"
             return
         if os.path.isfile(name):
-            print "File", name, "exists! Delete it or save in another place."
+            print "file", name, "exists! delete it or save in another place."
             return
         if not os.path.exists(name):
             os.mkdir(name)
@@ -242,14 +242,19 @@ class Cache:
     
     def save(self, pop):
         "saves trajectory file and registers it in index file"
+        if os.path.isfile(datadir):
+            print "file", , "exists! delete it or save in another place."
+            return
+        if not os.path.exists(datadir):
+            os.mkdir(datadir)
+        f = open(self.datadir + "/" + filename , "w")
+        f.write(bz2.compress(pop.writestat()))
+        f.close()
         self.readindex()
         paramline = "_".join(map(lambda n: str(pop.params[n]), swigworld_param_names))
         filename = time.strftime("%Y-%m-%d_%H-%M-%S_") + paramline + ".txt.bz2"
         self.dataindex.append({"params" : pop.params, "stat_names": pop.stat_names, "file": filename})
         self.saveindex()
-        f = open(self.datadir + "/" + filename , "w")
-        f.write(bz2.compress(pop.writestat()))
-        f.close()
         
     def find(self, **kwargs):
         params = copy(default_params)
