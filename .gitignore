@@ -14,4 +14,5 @@ muller_wrap.cpp
 *.ipynb
 *.htm*
 *.log
+*.txt
 *stackdump
