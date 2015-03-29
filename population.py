@@ -34,7 +34,8 @@ import muller
 # 
 # 
 
-default_params = {"steps" : 200, "N" : 100, "G" : 100, "M" : 0.015, "B" : 0.1, "fb" : 0.05, "T" : 0., "Tmut" : 0., "Mmut" : 0., "Ttransform" : 1., "C" : 0., "X" : 1, "even": True, "constantX": True, "Binitial" : -1., "interval" : 1, "seed" : -1, "verbose" : False}
+default_params = {"steps" : 200, "N" : 100, "G" : 100, "M" : 0.015, "B" : 0.1, "fb" : 0.05, "T" : 0., "Tmut" : 0., "Mmut" : 0., "Ttransform" : 1., "C" : 0., "X" : 1, "even": True, "constantX": True, "Binitial" : -1., "interval" : 1, "seed" : -1}
+        #, "verbose" : False}
 
 # extra_param_names = ["steps", "interval", "verbose"] # params that are not params of the model so should not be passed into model initialization
 
@@ -110,8 +111,8 @@ class population_exe:
         else:
             command = "nice -n 19 ./muller "
             self.output = commands.getoutput(command + str(self.steps) + " " + self.paramline)
-        if self.verbose:
-            print self.output
+        #if self.verbose:
+        #    print self.output
         self.readstat(self.output)
     
     def save(self, name = "trajectories"):
@@ -261,6 +262,7 @@ class Cache:
     def find(self, **kwargs):
         params = copy(default_params)
         params.update(kwargs)
+        
         steps = params.pop("steps")
         if kwargs.has_key("steps"):
             kwargs.pop("steps")
@@ -273,6 +275,7 @@ class Cache:
             seed = params.pop("seed")
             if kwargs.has_key("seed"):
                 kwargs.pop("seed")
+        
         found = self.dataindex
         for k, v in params.iteritems():
             # print k, v, len(found)
@@ -317,6 +320,8 @@ class population_cached(population_swig):
             population_swig.run(self, steps)
             cache.save(self) # now this case is present in cache!
             print "Data saved in file"
+            for k, v in self.stat.iteritems():
+                self.stat[k] = array(v) # for memory economy!
             return
         if steps:
             if steps > self.params["steps"]:
@@ -329,7 +334,7 @@ class population_cached(population_swig):
             else:
                 self.params, self.stat = self._params, self._stat
                 for k, v in self.stat.iteritems():
-                    v = v[:(steps % self.interval)]
+                   self.stat[k] = array(v[:(steps % self.interval)])
         else:
             self.params, self.stat = self._params, self._stat
 

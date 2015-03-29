@@ -246,9 +246,9 @@ def draw_stats(batches, xname = None, yname = None, additional_stats = [], log =
             #stats[i].append(b.grid(xname, yname, additional_stats[i]));
         
         htmlwrite("<p>")
-        fig(); contourf(*f); title("F ({}, {})".format(xname, yname)); xlabel(xname); ylabel(yname); colorbar(); logaxes();save()
-        fig(); contourf(*e); title("E ({}, {})".format(xname, yname)); xlabel(xname); ylabel(yname); colorbar(); logaxes();save()
-        fig(); contourf(*t); title("T ({}, {})".format(xname, yname)); xlabel(xname); ylabel(yname); colorbar(); logaxes();save()
+        fig(); contourf(*f); title("F ({}) ({}, {})".format(b.constants, xname, yname)); xlabel(xname); ylabel(yname); colorbar(); logaxes();save()
+        fig(); contourf(*e); title("E ({}) ({}, {})".format(b.constants, xname, yname)); xlabel(xname); ylabel(yname); colorbar(); logaxes();save()
+        fig(); contourf(*t); title("T ({}) ({}, {})".format(b.constants, xname, yname)); xlabel(xname); ylabel(yname); colorbar(); logaxes();save()
         htmlwrite("</p>")
         
         #for i in xrange(len(additional_stats)):
