@@ -1,16 +1,3 @@
-// #define BINOMIAL
-
-// #ifdef BINOMIAL
-
-
-// std::default_random_engine generator;
-// std::ranlux24 generator;
-// std::mt19937 generator;
-// std::ranlux24_base generator;
-
-
-// #endif
-
 // const int MAX_GENES = 100000;
 const int MAX_CHROMOSOMES = 100;
 
@@ -19,20 +6,6 @@ typedef double real;
 
 using namespace std;
 
-/*
-real frand(){
-    return static_cast<real>(rand()) / RAND_MAX;
-};
-
-bool randbool(real probability){
-    // returns true with given probability
-    return rand() < (probability * RAND_MAX);
-}
-
-int randint(int n){
-    return rand() % n;
-}
-*/
 
 class Organism {
     
@@ -120,10 +93,9 @@ public:
     
     int time;
     
-// #define STATVARS(v) double v##avg
+// define somethong like this: real Eavg; real Estd; real Emin; real Emax;
 #define STATVARS(name) real name##avg; real name##std; real name##min; real name##max;
     
-    // real Eavg; real Estd; real Emin; real Emax;
     STATVARS(E); // part of good genes by organism
     STATVARS(EE); // part of effective good genes
     STATVARS(X); // number of chromosomes
@@ -131,44 +103,6 @@ public:
     STATVARS(M); // mutation probability
     STATVARS(T); // transformation probability
     STATVARS(EG); // part of good genes by number of gene
-    
-    /*
-    real Eavg; // part of good genes
-    real Estd; // by organism
-    real Emin;
-    real Emax;
-    
-    real EEavg; // part of effective good genes
-    real EEstd; // by organism
-    real EEmin;
-    real EEmax;
-
-    real Xavg; // number of chromosomes 
-    real Xstd;
-    real Xmin;
-    real Xmax;
-    
-    real Favg; // fitness
-    real Fstd;
-    real Fmin;
-    real Fmax;
-    
-    real Mavg; // mutation probability
-    real Mstd;
-    real Mmin;
-    real Mmax;
-    
-    real Tavg; // transformation probability
-    real Tstd;
-    real Tmin;
-    real Tmax;
-    
-    
-    real EGavg; // part of good genes
-    real EGstd; // by number of gene
-    real EGmin;
-    real EGmax;
-    */
     
     real Tplus;
     

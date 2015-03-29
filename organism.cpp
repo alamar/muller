@@ -1,6 +1,7 @@
 #include "world.h"
 
 // uniformly select n items from N items, out[i] is whether i-th item is selected
+// slow if part of selected items is more than ~0.11 cos needs to choose another position if selects already chosen
 void select_n_from(int n, int N, bool * out, std::default_random_engine * generator) {
     for(int i = 0; i < N; i++) out[i] = false;
     std::uniform_int_distribution<int> random_position(0, N - 1);
@@ -16,63 +17,40 @@ void select_n_from(int n, int N, bool * out, std::default_random_engine * genera
 
 // uniformly select items from N items with probability p
 // out[i] is whether i-th item is selected
-int select_binomial_from(real p, int N, bool * out, std::default_random_engine * generator) {
-    int selected_number = std::binomial_distribution<int>(N, p)(*generator);
-        // TODO: implement dumb selection (alternative to (M < 0.11) & (G > 40) or ifdef BINOMIAL)
-    select_n_from(selected_number, N, out, generator);
+int select_some_from(real p, int N, bool * out, std::default_random_engine * generator) {
+    int selected_number = 0;
+    if ((p < 0.11) & (N > 40)) { // cos different algorithms are faster in different cases
+        selected_number = std::binomial_distribution<int>(N, p)(*generator);
+        select_n_from(selected_number, N, out, generator);
+    } else {
+        std::bernoulli_distribution whether_to_choose(p);
+        for(int i = 0; i < N; i++) {
+            bool chosen = whether_to_choose(*generator);
+            out[i] = chosen;
+            selected_number += (int) chosen;
+        }
+    }
     return selected_number;
 }
 
 
 void Organism::mutate(){
     
-    std::bernoulli_distribution random_mutation(B);
-    std::bernoulli_distribution whether_to_mutate(M);
     if (M > 0) {
         
-        // TODO: migrate to select_binomial_from()
-#ifdef BINOMIAL
-        if ((M < 0.11) & (G > 40)) {
-            // std::binomial_distribution<int> distribution(G, M);
-            int mutation_number = std::binomial_distribution<int>(G, M)(*generator);
-	    std::uniform_int_distribution<int> random_gene(0, G - 1);
-            
-//             bool mutation_log[G]; // incompatible with msvc?
-//             vector<bool> mutation_log(G); // too slow
-            // bool * mutation_log = (bool *) alloca(G * sizeof(bool)); // incompatible with mingw!
-            bool * mutation_log = new bool[G]; // slower than alloca but cross platform
-//             static bool mutation_log[MAX_GENES]; // fast and compatible, but not thread safe!
-
-            for(int i = 0; i < G; i++) mutation_log[i] = false;
-            
-            for(int i = 0; i < mutation_number; i++){
-                // int pos = randint(G);
-                int pos = random_gene(*generator);
-                while(mutation_log[pos] == true) {
-                    // pos = randint(G);
-                    pos = random_gene(*generator);
-                }
-                // genes[i] = randbool(B);
-                genes[pos] = random_mutation(*generator);
-                mutation_log[pos] = true;
-            }
-            delete mutation_log;
-        } else 
-#endif
-        {
-            for(int x = 0; x < X; x++) for(int i = 0; i < G; i++) {
-                // if (randbool(M)){
-                if (whether_to_mutate(*generator)){
-                    // genes[i] = randbool(B);
+        std::bernoulli_distribution whether_to_mutate(M);
+        std::bernoulli_distribution random_mutation(B);
+        
+        bool * mutation_array = new bool[G];
+        for(int x = 0; x < X; x++) {
+            select_some_from(M, G, mutation_array, generator);
+            for(int i = 0; i < G; i++)
+                if (mutation_array[i])
                     chromosomes[x][i] = random_mutation(*generator);
-                }
-            };
         }
         
-        // if ((Tmut > 0) && randbool(M)) T = max(0., T + frand() * Tmut - 0.5 * Tmut);
         if ((Tmut > 0) && whether_to_mutate(*generator)) 
             T = max(0., T + std::uniform_real_distribution<real> (- 0.5 * Tmut, 0.5 * Tmut)(*generator));
-        // if ((Mmut > 0) && randbool(M)) M = max(0., M + frand()* Mmut - 0.5 * Mmut);
         if ((Mmut > 0) && whether_to_mutate(*generator))
             M = max(0., M + std::uniform_real_distribution<real> (- 0.5 * Mmut, 0.5 * Mmut)(*generator));
         calc_fitness();
@@ -85,38 +63,12 @@ void Organism::transform(Organism * donor){
 
     if (T > 0){
         
-        // TODO: migrate to select_binomial_from()
-#ifdef BINOMIAL
-        if ((T < 0.11) & (G > 40)) {
-            std::binomial_distribution<int> distribution(G, T);
-	    std::uniform_int_distribution<int> random_gene(0, G - 1);
-            
-            int transformation_number = distribution(*generator);
-            // bool * transformation_log = (bool *) alloca(G * sizeof(bool));
-            bool * transformation_log = new bool[G];
-//             static bool transformation_log[MAX_GENES];
-            for(int i = 0; i < G; i++) transformation_log[i] = false;
-            
-            for(int i = 0; i < transformation_number; i++){
-                // int pos = randint(G);
-                int pos = random_gene(*generator);
-                while(transformation_log[pos] == true) {
-                    // pos = randint(G);
-                    pos = random_gene(*generator);
-                }
-                genes[pos] = donor->genes[pos];
-                transformation_log[pos] = true;
-            }
-            delete transformation_log;
-        } else 
-#endif
-        {
-            for(int x = 0; x < X; x++) for(int i = 0; i < G; i++){
-                // if (randbool(T)){ 
-                if (whether_to_transform(*generator)){ 
+        bool * transformation_array = new bool[G];
+        for(int x = 0; x < X; x++) {
+            select_some_from(T, G, transformation_array, generator);
+            for(int i = 0; i < G; i++)
+                if (transformation_array[i])
                     chromosomes[x][i] = donor->chromosomes[random_chromosome(*generator)][i]; // may be slow!
-                };
-            };
         }
         
         if (Ttransform){

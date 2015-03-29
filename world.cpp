@@ -10,14 +10,11 @@ void World::select(){
     for(int i = 0; i < N; i++){
         total += pop[i]->F;
         roulette[i] = total;
-//     cout << total << "\n";
     }
     std::uniform_real_distribution<real> random_roll(0, total);
     vector <real>::iterator pos;
     for(int i = 0; i < N; i++){
-        // pos = lower_bound(roulette.begin(), roulette.end(), frand() * total);
         pos = lower_bound(roulette.begin(), roulette.end(), random_roll(generator));
-//         cout << pos - roulette.begin() << "\n";
         offsprings[i]->replicate_from(pop[pos - roulette.begin()]);
     }
     swap_pop();
@@ -34,16 +31,10 @@ void World::transform(){ // transform pop[]
         offsprings[i]->copy_from(pop[i]);
     }
     
-    /* // alternative transformation - in one direction!
-    std::uniform_int_distribution<int> random_donor(0, N - 1);
-    for (int i = 0; i < N; i++){
-        offsprings[i]->transform(pop[random_donor(generator)]);
-    }*/
-    
     // reciprocal transformation in pairs
     // assuming organisms are shuffled good enough by selection process!
     // if population size is odd then the last organism is alone!
-    for (int i = 0; i < N-1; i+=2){
+    for (int i = 0; i < N-1; i += 2){
         offsprings[i]->transform(pop[i+1]);
         offsprings[i+1]->transform(pop[i]);
     }
@@ -54,14 +45,6 @@ void World::step(){
     select();
     mutate();
     transform();
-    /*std::uniform_int_distribution<int> random_donor(0, N - 1);
-    for(int i = 0; i < N; i++){
-        offsprings[i]->mutate();
-        //offsprings[i]->transform(pop[randint(N)]);
-        offsprings[i]->transform(pop[random_donor(generator)]);
-    }
-    // swap(pop, offsprings);
-    swap_pop();*/
     time += 1;
 }
 
@@ -89,48 +72,8 @@ void World::calc_stat(){
     
     Tplus = 0.;
     
-    /*
-    Eavg = 0; // part of good genes
-    Estd = 0;
-    Emin = pop[0]->E;
-    Emax = pop[0]->E;
-    
-    EEavg = 0; // part of effective good genes
-    EEstd = 0;
-    EEmin = pop[0]->EE;
-    EEmax = pop[0]->EE;
-    
-    Xavg = 0; // number of chromosomes
-    Xstd = 0;
-    Xmin = pop[0]->X;
-    Xmax = pop[0]->X;
-    
-    Favg = 0; // fitness
-    Fstd = 0;
-    Fmin = pop[0]->F;
-    Fmax = pop[0]->F;
-    
-    Mavg = 0; // mutation probability
-    Mstd = 0;
-    Mmin = pop[0]->M;
-    Mmax = pop[0]->M;
-    
-    Tavg = 0; // transformation probability
-    Tstd = 0;
-    Tmin = pop[0]->T;
-    Tmax = pop[0]->T;
-    
-    Tplus = 0.;
-    
-    EGavg = 0; // part of good genes by number of gene
-    EGstd = 0;
-    EGmin = N;
-    EGmax = 0.;
-    */
-    
     // int * EG = (int *) alloca(G * sizeof(int)); // int EG[G]
     int * EG = new int[G]; // int EG[G]
-//     static int EG[MAX_GENES];
     for(int j = 0; j < G; j++) EG[j] = 0;
     
     for(int i = 0; i < N; i++){
@@ -150,33 +93,6 @@ void World::calc_stat(){
         STATADD(M);
         STATADD(T);
          
-        /*
-        t = pop[i]->E;
-        Eavg += t;
-        Estd += t * t;
-        if (t < Emin) Emin = t;
-        if (t > Emax) Emax = t;
-        
-        t = pop[i]->F;
-        Favg += t;
-        Fstd += t * t;
-        if (t < Fmin) Fmin = t;
-        if (t > Fmax) Fmax = t;
-        
-        t = pop[i]->M;
-//         cout << t << " ";
-        Mavg += t;
-        Mstd += t * t;
-        if (t < Mmin) Mmin = t;
-        if (t > Mmax) Mmax = t;
-        
-        t = pop[i]->T;
-        Tavg += t;
-        Tstd += t * t;
-        if (t < Tmin) Tmin = t;
-        if (t > Tmax) Tmax = t;
-        */
-        
         Tplus += (pop[i]->T > 0.);
         
         for(int j = 0; j < G; j++) 
@@ -197,22 +113,6 @@ void World::calc_stat(){
     STATNORMALIZE(F, 1);
     STATNORMALIZE(M, 1);
     STATNORMALIZE(T, 1);
-    
-    /*
-    Eavg = Eavg / G / N;
-    Estd = sqrt(abs((Estd / G / G - N * Eavg * Eavg) / (N - 1)));
-    Emin = Emin / G;
-    Emax = Emax / G;
-    
-    Favg = Favg / N;
-    Fstd = sqrt(abs((Fstd - N * Favg * Favg) / (N - 1)));
-    
-    Mavg = Mavg / N;
-    Mstd = sqrt(abs((Mstd - N * Mavg * Mavg) / (N - 1)));
-    
-    Tavg = Tavg / N;
-    Tstd = sqrt(abs((Tstd - N * Tavg * Tavg) / (N - 1)));
-    */
     
     Tplus = Tplus / N;
     
