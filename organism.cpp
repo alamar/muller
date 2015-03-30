@@ -54,6 +54,7 @@ void Organism::mutate(){
         if ((Mmut > 0) && whether_to_mutate(*generator))
             M = max(0., M + std::uniform_real_distribution<real> (- 0.5 * Mmut, 0.5 * Mmut)(*generator));
         calc_fitness();
+        delete mutation_array;
     };
 };
 
@@ -72,12 +73,11 @@ void Organism::transform(Organism * donor){
         }
         
         if (Ttransform){
-            // if (randbool(T)) T = donor->T;
             if (whether_to_transform(*generator)) T = donor->T;
-            // if (randbool(T)) M = donor->M;
             if (whether_to_transform(*generator)) M = donor->M;
         }
-        calc_fitness();    
+        calc_fitness();
+        delete transformation_array;
     }
 };
 

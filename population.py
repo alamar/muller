@@ -53,11 +53,84 @@ stat_names = ["time"] + STATVARS("E", "EE", "X", "F", "M", "T", "EG") + ["Tplus"
 
 # stat_names = ["time", "Eavg", "Estd", "Emin", "Emax", "Favg", "Fstd", "Fmin", "Fmax", "Mavg", "Mstd", "Mmin", "Mmax", "Tavg", "Tstd", "Tmin", "Tmax", "Tplus", "EGavg", "EGstd", "EGmin", "EGmax"]
 
+#
+#class population_exe:
+#    
+#    def __init__(self, **kwargs):
+#        
+#        # filling attributes at once instead of mentioning each one
+#        # if parameter is not present in arguments then it will be taken from default_params
+#        self.params = copy(default_params)
+#        self.params.update(kwargs)
+#        for k, v in self.params.iteritems():
+#            setattr(self, k, v)
+#        
+#        # self.paramline = " " + " ".join(map(str, (self.N, self.G, self.B, self.fb, self.M, self.Mmut, self.T, self.Tmut, self.Ttransform, self.C, self.Binitial, self.interval, self.seed))) # parameters needed for running c++ executable
+#        self.paramline = ""
+#        for p in exe_param_names:
+#            self.paramline += (" " + str(self.params[p]))
+#        
+#        # if seed < 0:
+#            # pass
+#    
+#    def readstat(self, text):
+#        # text is content of statistics file or output of modeling program
+#        # TODO: generally move to csv, scipy.io or another module (also use bzip2)
+#        #reads = [[] for i in xrange(len(self.stat))]
+#        s = text.splitlines()
+#        for i in xrange(len(s)):
+#            if s[i] == "Statistics begin":
+#                begin = i
+#                break
+#        
+#        # parsing header representing statistic variable names
+#        self.stat = {}
+#        self.stat_names = []
+#        for statname in s[begin+1].split():
+#            self.stat[statname] = []
+#            self.stat_names.append(statname)
+#            
+#        for line in s[begin+2:]:
+#            s = line.split()
+#            for i in xrange(len(s)):
+#                self.stat[self.stat_names[i]].append(float(s[i]))
+#        
+#        for k, v in self.stat.iteritems():
+#            self.stat[k] = array(v) # for memory economy!
+#        
+#            
+#    def run(self, steps = None):
+#        if steps:
+#            self.steps = steps
+#        # commandline = 
+#        # print self.paramline
+#        command = "nice -n 19 ./muller "
+#        if sys.platform == "win32":
+#            command = "muller.exe "
+#            self.output = subprocess.check_output(command + str(self.steps) + " " + self.paramline)
+#        else:
+#            command = "nice -n 19 ./muller "
+#            self.output = commands.getoutput(command + str(self.steps) + " " + self.paramline)
+#        #if self.verbose:
+#        #    print self.output
+#        self.readstat(self.output)
+#    
+#    def save(self, name = "trajectories"):
+#        if not hasattr(self, "output"):
+#            print "There are no results, run calculation first!"
+#            return
+#        if os.path.isfile(name):
+#            print "file", name, "exists! delete it or save in another place."
+#            return
+#        if not os.path.exists(name):
+#            os.mkdir(name)
+#        f = open(name + "/" + time.strftime("%Y-%m-%d_%H-%M-%S") + self.paramline + ".txt.bz2", "w")
+#        f.write(bz2.compress(self.output))
+#        f.close()
 
-class population_exe:
+class population_swig:
     
     def __init__(self, **kwargs):
-        
         # filling attributes at once instead of mentioning each one
         # if parameter is not present in arguments then it will be taken from default_params
         self.params = copy(default_params)
@@ -65,74 +138,6 @@ class population_exe:
         for k, v in self.params.iteritems():
             setattr(self, k, v)
         
-        # self.paramline = " " + " ".join(map(str, (self.N, self.G, self.B, self.fb, self.M, self.Mmut, self.T, self.Tmut, self.Ttransform, self.C, self.Binitial, self.interval, self.seed))) # parameters needed for running c++ executable
-        self.paramline = ""
-        for p in exe_param_names:
-            self.paramline += (" " + str(self.params[p]))
-        
-        # if seed < 0:
-            # pass
-    
-    def readstat(self, text):
-        # text is content of statistics file or output of modeling program
-        # TODO: generally move to csv, scipy.io or another module (also use bzip2)
-        #reads = [[] for i in xrange(len(self.stat))]
-        s = text.splitlines()
-        for i in xrange(len(s)):
-            if s[i] == "Statistics begin":
-                begin = i
-                break
-        
-        # parsing header representing statistic variable names
-        self.stat = {}
-        self.stat_names = []
-        for statname in s[begin+1].split():
-            self.stat[statname] = []
-            self.stat_names.append(statname)
-            
-        for line in s[begin+2:]:
-            s = line.split()
-            for i in xrange(len(s)):
-                self.stat[self.stat_names[i]].append(float(s[i]))
-        
-        for k, v in self.stat.iteritems():
-            self.stat[k] = array(v) # for memory economy!
-        
-            
-    def run(self, steps = None):
-        if steps:
-            self.steps = steps
-        # commandline = 
-        # print self.paramline
-        command = "nice -n 19 ./muller "
-        if sys.platform == "win32":
-            command = "muller.exe "
-            self.output = subprocess.check_output(command + str(self.steps) + " " + self.paramline)
-        else:
-            command = "nice -n 19 ./muller "
-            self.output = commands.getoutput(command + str(self.steps) + " " + self.paramline)
-        #if self.verbose:
-        #    print self.output
-        self.readstat(self.output)
-    
-    def save(self, name = "trajectories"):
-        if not hasattr(self, "output"):
-            print "There are no results, run calculation first!"
-            return
-        if os.path.isfile(name):
-            print "file", name, "exists! delete it or save in another place."
-            return
-        if not os.path.exists(name):
-            os.mkdir(name)
-        f = open(name + "/" + time.strftime("%Y-%m-%d_%H-%M-%S") + self.paramline + ".txt.bz2", "w")
-        f.write(bz2.compress(self.output))
-        f.close()
-
-class population_swig(population_exe):
-    
-    def __init__(self, **kwargs):
-        # super(type(self), self).__init__(**kwargs)
-        population_exe.__init__(self, **kwargs)        
         
         if self.Binitial < 0:
             self.params["Binitial"] = self.B
@@ -180,6 +185,8 @@ class population_swig(population_exe):
             self.model.step()
             if self.model.time % self.interval == 0:
                 self.append_stat()
+        for k, v in self.stat.iteritems():
+            self.stat[k] = array(v) # for memory economy!
      
 
 
@@ -258,6 +265,14 @@ class Cache:
         self.readindex()
         self.dataindex.append({"params" : pop.params, "stat_names": pop.stat_names, "file": filename})
         self.saveindex()
+        
+    def select(self, filter_lambda = None, **kwargs):
+        """returns all cases satisfying lambda and having given parameters
+        examples:
+        
+        select(lambda a: a.G == 1. / a.M)
+        select(G = 30, N = [10, 30, 100])"""
+        
         
     def find(self, **kwargs):
         params = copy(default_params)

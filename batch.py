@@ -158,6 +158,8 @@ def fisher_plot(model, dt = 10):
     legend()
 
 
+# old shit
+
 def draw_stats(batches, xname = None, yname = None, additional_stats = [], log = True, html = None):
     "Draw many interesting graphs about results. xname, yname - names of parameters"
     #fig_n = 0
