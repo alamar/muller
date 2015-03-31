@@ -48,13 +48,13 @@ void Organism::mutate(){
                 if (mutation_array[i])
                     chromosomes[x][i] = random_mutation(*generator);
         }
+        delete mutation_array;
         
         if ((Tmut > 0) && whether_to_mutate(*generator)) 
             T = max(0., T + std::uniform_real_distribution<real> (- 0.5 * Tmut, 0.5 * Tmut)(*generator));
         if ((Mmut > 0) && whether_to_mutate(*generator))
             M = max(0., M + std::uniform_real_distribution<real> (- 0.5 * Mmut, 0.5 * Mmut)(*generator));
         calc_fitness();
-        delete mutation_array;
     };
 };
 
@@ -71,13 +71,13 @@ void Organism::transform(Organism * donor){
                 if (transformation_array[i])
                     chromosomes[x][i] = donor->chromosomes[random_chromosome(*generator)][i]; // may be slow!
         }
+        delete transformation_array;
         
         if (Ttransform){
             if (whether_to_transform(*generator)) T = donor->T;
             if (whether_to_transform(*generator)) M = donor->M;
         }
         calc_fitness();
-        delete transformation_array;
     }
 };
 
@@ -226,4 +226,10 @@ Organism::Organism(int _G, real _B, real _fb, real _M, real _Mmut, real _T, real
     B = _B;
 }
 
-
+Organism::~Organism() {
+    delete good_genes;
+    for(int x = 0; x < X; x++) {
+        delete chromosomes[x];
+    }
+    delete chromosomes;
+}

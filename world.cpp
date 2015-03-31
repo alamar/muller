@@ -188,3 +188,11 @@ World::World(int _N, int _G, real _B, real _fb, real _M, real _Mmut, real _T, re
     }
 }
 
+World::~World() {
+    for(int i = 0; i < N; i++) {
+        delete pop[i];
+        delete offsprings[i];
+    }
+    delete pop;
+    delete offsprings;
+}
