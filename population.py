@@ -53,80 +53,6 @@ stat_names = ["time"] + STATVARS("E", "EE", "X", "F", "M", "T", "EG") + ["Tplus"
 
 # stat_names = ["time", "Eavg", "Estd", "Emin", "Emax", "Favg", "Fstd", "Fmin", "Fmax", "Mavg", "Mstd", "Mmin", "Mmax", "Tavg", "Tstd", "Tmin", "Tmax", "Tplus", "EGavg", "EGstd", "EGmin", "EGmax"]
 
-#
-#class population_exe:
-#    
-#    def __init__(self, **kwargs):
-#        
-#        # filling attributes at once instead of mentioning each one
-#        # if parameter is not present in arguments then it will be taken from default_params
-#        self.params = copy(default_params)
-#        self.params.update(kwargs)
-#        for k, v in self.params.iteritems():
-#            setattr(self, k, v)
-#        
-#        # self.paramline = " " + " ".join(map(str, (self.N, self.G, self.B, self.fb, self.M, self.Mmut, self.T, self.Tmut, self.Ttransform, self.C, self.Binitial, self.interval, self.seed))) # parameters needed for running c++ executable
-#        self.paramline = ""
-#        for p in exe_param_names:
-#            self.paramline += (" " + str(self.params[p]))
-#        
-#        # if seed < 0:
-#            # pass
-#    
-#    def readstat(self, text):
-#        # text is content of statistics file or output of modeling program
-#        # TODO: generally move to csv, scipy.io or another module (also use bzip2)
-#        #reads = [[] for i in xrange(len(self.stat))]
-#        s = text.splitlines()
-#        for i in xrange(len(s)):
-#            if s[i] == "Statistics begin":
-#                begin = i
-#                break
-#        
-#        # parsing header representing statistic variable names
-#        self.stat = {}
-#        self.stat_names = []
-#        for statname in s[begin+1].split():
-#            self.stat[statname] = []
-#            self.stat_names.append(statname)
-#            
-#        for line in s[begin+2:]:
-#            s = line.split()
-#            for i in xrange(len(s)):
-#                self.stat[self.stat_names[i]].append(float(s[i]))
-#        
-#        for k, v in self.stat.iteritems():
-#            self.stat[k] = array(v) # for memory economy!
-#        
-#            
-#    def run(self, steps = None):
-#        if steps:
-#            self.steps = steps
-#        # commandline = 
-#        # print self.paramline
-#        command = "nice -n 19 ./muller "
-#        if sys.platform == "win32":
-#            command = "muller.exe "
-#            self.output = subprocess.check_output(command + str(self.steps) + " " + self.paramline)
-#        else:
-#            command = "nice -n 19 ./muller "
-#            self.output = commands.getoutput(command + str(self.steps) + " " + self.paramline)
-#        #if self.verbose:
-#        #    print self.output
-#        self.readstat(self.output)
-#    
-#    def save(self, name = "trajectories"):
-#        if not hasattr(self, "output"):
-#            print "There are no results, run calculation first!"
-#            return
-#        if os.path.isfile(name):
-#            print "file", name, "exists! delete it or save in another place."
-#            return
-#        if not os.path.exists(name):
-#            os.mkdir(name)
-#        f = open(name + "/" + time.strftime("%Y-%m-%d_%H-%M-%S") + self.paramline + ".txt.bz2", "w")
-#        f.write(bz2.compress(self.output))
-#        f.close()
 
 class population_swig:
     
@@ -266,64 +192,113 @@ class Cache:
         self.dataindex.append({"params" : pop.params, "stat_names": pop.stat_names, "file": filename})
         self.saveindex()
         
-    def select(self, filter_lambda = None, **kwargs):
-        """returns all cases satisfying lambda and having given parameters
-        examples:
+    def select(self, default = True, filter_lambda = None, **kwargs):
+        """Returns all cases satisfying lambda and having given parameters (and equal or more than given length).
+        If default = True then omitted params will be at default values, otherwise it will filter only by mentioned parameters.
+        If you get too few results - try default = False !
+        
+        Returns array of dictionaries {"params" : {..}, "stat_names": [..], "file": "smth"}.
+        
+        Examples:
         
         select(lambda a: a.G == 1. / a.M)
-        select(G = 30, N = [10, 30, 100])"""
+        select(G = 30, N = 100)"""
         
+        # TODO: implement multiple selection, e. g select(G = 30, N = [10, 30, 100])
         
-    def find(self, **kwargs):
-        params = copy(default_params)
+        params = {}
+        if default == True:
+            params = copy(default_params)
         params.update(kwargs)
         
         steps = params.pop("steps")
-        if kwargs.has_key("steps"):
-            kwargs.pop("steps")
         # print "Seed:", params["seed"]
         if params["Binitial"] < 0:
             params["Binitial"] = params["B"]
-            if kwargs.has_key("Binitial"):
-                kwargs.pop("Binitial")
         if params["seed"] < 0: # if seed < 0 then we can choose trajectory with any seed
             seed = params.pop("seed")
-            if kwargs.has_key("seed"):
-                kwargs.pop("seed")
         
         found = self.dataindex
         for k, v in params.iteritems():
             # print k, v, len(found)
             found = filter(lambda a: a["params"][k] == v, found)
+        found = filter(lambda a: a["params"]["steps"] >= steps, found)
+        return found
+        
+        
+    def select_one(self, **kwargs):
+        """Returns one of saved trajectories with given parameters (all other parameters will be default), or None if there are no such files.
+        
+        Returns array of dictionaries {"params" : {..}, "stat_names": [..], "file": "smth"}."""
+        
+#        params = copy(default_params)
+#        params.update(kwargs)
+#        
+#        steps = params.pop("steps")
+#        # print "Seed:", params["seed"]
+#        if params["Binitial"] < 0:
+#            params["Binitial"] = params["B"]
+#        if params["seed"] < 0: # if seed < 0 then we can choose trajectory with any seed
+#            seed = params.pop("seed")
+#        
+#        found = self.dataindex
+#        for k, v in params.iteritems():
+#            # print k, v, len(found)
+#            found = filter(lambda a: a["params"][k] == v, found)
+#        found = filter(lambda a: a["params"]["steps"] >= steps, found)
+        
+        found = self.select(**kwargs)
         if len(found) == 0:
             return None
-        maxsteps = max(map(lambda a: a["params"]["steps"], found))
-        if maxsteps < steps:
-            return None
-        found = filter(lambda a: a["params"]["steps"] == maxsteps, found)
-        return found[randint(len(found))] # return some trajectory from those who have maximum length
+        
+        # maxsteps = max(map(lambda a: a["params"]["steps"], found))
+        # if maxsteps < steps:
+        #     return None
+        # found = filter(lambda a: a["params"]["steps"] == maxsteps, found)
+
+        return found[randint(len(found))] # return some trajectory from those who have sufficient length
     
-    def load(self, **kwargs):
-        found = self.find(**kwargs)
-        if found == None:
-            return None
-        filename = found["file"]
+    def load_from_file(self, filename):
         f = open(self.datadir + "/" + filename)
         params, stat = readstat(bz2.decompress(f.read()))
         return params, stat
+    
+    def load_by_params(self, **kwargs):
+        found = self.select_one(**kwargs)
+        if found == None:
+            return None
+        filename = found["file"]
+        return self.load_from_file(filename)
 
 cache = Cache()
 
 class population_cached(population_swig):
     
-    def __init__(self, **kwargs):
-        data = cache.load(**kwargs)
+    def __init__(self, filename = None, new = False, **kwargs):
+        """This object is needed to obtain trajectory of model with specified parameters. It tries to load it from disk or, if it is impossible, prepares model to run.
+        
+        Always call run() of created object! (But only once, multiple runs not tested.)
+        
+        Also it automatically saves trajectory after run (if needed).
+        
+        If filename is specified, then trajectory will be loaded from this file.
+        If new = True, then new calculation will be initialized anyway.
+        Otherwise trajectory with specified parameters will be loaded or, if it does not exist, calculation will be initialized."""
+        if not new:
+            if filename:
+                data = cache.load_from_file(filename)
+            else:
+                data = cache.load_by_params(**kwargs)
+        else:
+            data = None
         if data:
             self._params, self._stat = data
+            for k, v in self._stat.iteritems():
+               self._stat[k] = array(v)
             self.params, self.stat = self._params, self._stat
             for k, v in self.params.iteritems():
                 setattr(self, k, v)
-            print "Loading data from file"
+            print "Loaded data from file"
         else:
             population_swig.__init__(self, **kwargs)
             calc_units = self.N * self.G * self.X * self.steps
@@ -348,10 +323,21 @@ class population_cached(population_swig):
                 print "Data saved in file"
             else:
                 self.params, self.stat = self._params, self._stat
-                for k, v in self.stat.iteritems():
-                   self.stat[k] = array(v[:(steps % self.interval)])
+                #for k, v in self.stat.iteritems():
+                #   self.stat[k] = array(v[:(steps % self.interval)])
         else:
             self.params, self.stat = self._params, self._stat
+
+
+def many_runs(run_n = 1, **kwargs):
+    """Returns specified quantity of trajectories with the same parameters (except random seed). If there are not enough saved trajectories, returns all available and remaining as population objects to run.
+    
+    WARNING: if there are multiple trajectories with same seed, they all will be loaded (and so there will be duplicates in data set)!"""
+    # TODO: solve warning
+    found = cache.select(**kwargs)
+    data = map(lambda a: population_cached(filename = a["file"]), found[:run_n])
+    models = [population_cached(new = True, **kwargs) for i in xrange(run_n - len(found))]
+    return data + models
 
 
 # population = population_swig
