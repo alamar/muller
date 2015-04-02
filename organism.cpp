@@ -118,6 +118,7 @@ void Organism::uneven_division_from(Organism * parent) {
             to += 1;
         }  
     }
+    if (to != Xnew) cout << to << " " << Xnew << endl;
     delete chromosomes_replicated;
 }
 
@@ -224,6 +225,7 @@ Organism::Organism(int _G, real _B, real _fb, real _M, real _Mmut, real _T, real
     mutate();
     M = _M;
     B = _B;
+    // calc_fitness();
 }
 
 Organism::~Organism() {

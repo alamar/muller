@@ -99,6 +99,65 @@ def replication_alloc_test(world, steps, even = False, constantX = False):
         o = t
     
 
+def chromosome_to_list(o, x):
+    """Converts chromosome to pythonic list. Direct use of chromosome (like for g in o.chromosomes[x]) leads to crash due to lack of range checking."""
+    # TODO: migrate all chromosome retrievals to this
+    return [int(o.chromosomes[x][g]) for g in xrange(o.G)]
+
+def compare_chromosomes(a, o):
+    """checks if all offspring's chromosomes are copies of ancestor's"""
+    w = True
+    for i in xrange(o.X):
+        x = [o.chromosomes[i][g] for g in xrange(o.G)]
+        e = False
+        for j in xrange(a.X):
+            y = [a.chromosomes[j][g] for g in xrange(a.G)]
+            e = e or (x == y)
+        w = w and e
+    return w
+
+def uneven_selection_test(world):
+    for i in xrange(len(world)):
+        world[i].C = i # dummy number to identify ancestors
+    world.select()
+    for o in world:
+        i = int(o.C)
+        if i < 0 or i >= world.N:
+            print "C is not in range of organism indices!", o.C
+        else:
+            a = world.offsprings[int(o.C)]
+            if a.C != o.C:
+                print "C is not index of ancestor!", o.C, " ", a.C
+            if not compare_chromosomes(a, o):
+                print "Bastard detected! ", o.C
+
+def uneven_test(world, steps = 1):
+    G = world.G
+    for i in xrange(len(world)):
+        ib = int_to_bools(i, G)
+        a = world[i]
+        a.C = i # dummy number to identify ancestors
+        for x in xrange(a.X):
+            # xb = int_to_bools(x, G)
+            for j in xrange(G):
+                a.chromosomes[x][j] = ib[j]
+    for t in xrange(steps):
+        perm = permutation(world.N)
+        for i in xrange(len(world)):
+            world.offsprings[i].replicate_from(world[perm[i]])
+        for i in xrange(len(world)):
+            o = world.offsprings[i]
+            a = world[perm[i]]
+            if a.C != o.C:
+                print "Step ", t, ", organism ", i, ": C is not equal to ", a.C, " but ", o.C
+            for x in xrange(a.X):
+                xo = bools_to_int([o.chromosomes[x][j] for j in xrange(G)])
+                xa = bools_to_int([a.chromosomes[x][j] for j in xrange(G)])
+                if xo != xa:
+                    print "Step ", t, ", organism ", i, ", chromosome ", x, "is not ", xa, " but ", xo
+        world.swap_pop()
+
+
 def selection_test(world, steps):
     """Test for selection process. Returns fitnesses, numbers of children, theoretical numbers of children. Example usage:
 

@@ -293,8 +293,8 @@ class population_cached(population_swig):
             data = None
         if data:
             self._params, self._stat = data
-            for k, v in self._stat.iteritems():
-               self._stat[k] = array(v)
+            # for k, v in self._stat.iteritems():
+            #     self._stat[k] = array(v) # already done in readstat()
             self.params, self.stat = self._params, self._stat
             for k, v in self.params.iteritems():
                 setattr(self, k, v)
@@ -323,8 +323,9 @@ class population_cached(population_swig):
                 print "Data saved in file"
             else:
                 self.params, self.stat = self._params, self._stat
-                #for k, v in self.stat.iteritems():
-                #   self.stat[k] = array(v[:(steps % self.interval)])
+                for k, v in self.stat.iteritems():
+                #     self.stat[k] = array(v[:steps])
+                    self.stat[k] = array(v[:(steps / self.interval)])
         else:
             self.params, self.stat = self._params, self._stat
 
