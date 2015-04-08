@@ -128,7 +128,7 @@ void Organism::copy_from(Organism * donor){
     // for(int i = 0; i < G; i++){
         // genes[i] = donor->genes[i];
     // };
-    // copy(donor->genes, donor->genes + G, genes);
+    copy(donor->good_genes, donor->good_genes + G, good_genes);
 
     change_ploidy(donor -> X);
     for(int x = 0; x < X; x++)

@@ -125,8 +125,10 @@ void World::calc_stat(){
     }
     EGavg = EGavg / N / G;
     EGstd = sqrt(abs((EGstd / N / N - G * EGavg * EGavg) / (G - 1)));
-    EGmin = EGmin / N;
-    EGmax = EGmax / N;
+    EGmin = EGmin / N / X;
+    EGmax = EGmax / N / X;
+    EGavg = EGavg / X;
+    EGstd = EGstd / X;
     
     delete EG;
 }
