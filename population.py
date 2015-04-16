@@ -54,6 +54,10 @@ stat_names = ["time"] + STATVARS("E", "EE", "X", "F", "M", "T", "EG") + ["Tplus"
 # stat_names = ["time", "Eavg", "Estd", "Emin", "Emax", "Favg", "Fstd", "Fmin", "Fmax", "Mavg", "Mstd", "Mmin", "Mmax", "Tavg", "Tstd", "Tmin", "Tmax", "Tplus", "EGavg", "EGstd", "EGmin", "EGmax"]
 
 
+def chromosome_to_list(o, x):
+    """Returns x-th chromosome of organism o as list. Direct iteration over chromosome leads to segmentation fault due to no range checking!"""
+    return [int(o.chromosomes[x][g]) for g in xrange(o.G)]
+
 class population_swig:
     
     def __init__(self, **kwargs):
@@ -103,7 +107,12 @@ class population_swig:
             v.append(getattr(self.model, k))
         
     
-    def run(self, steps = None):
+    def run(self, steps = None, stat_func = None):
+        """Runs simulation. If stat_func given, returns times and results of stat_func. stat_func must take population object and return list or tuple! So any custom statistics may be gathered. Also population manipulation is possible within stat_func."""
+        custom_stat = []
+        if type(self.stat[self.stat.keys()[0]]) == type(array([])):
+            for k, v in self.stat.iteritems():
+                self.stat[k] = list(v) # for restarts
         if steps:
             self.params["steps"] = steps + self.model.time
             self.steps = steps
@@ -111,8 +120,12 @@ class population_swig:
             self.model.step()
             if self.model.time % self.interval == 0:
                 self.append_stat()
-        for k, v in self.stat.iteritems():
-            self.stat[k] = array(v) # for memory economy!
+            if stat_func != None: # gathering custom statistics
+                custom_stat.append([self.model.time] + list(stat_func(self)))
+        if stat_func != None:
+            return custom_stat
+        #for k, v in self.stat.iteritems():
+        #    self.stat[k] = array(v) # for memory economy!
      
 
 
@@ -319,6 +332,8 @@ class population_cached(population_swig):
                 self.params["steps"] = steps
                 population_swig.__init__(self, **self.params)
                 population_swig.run(self, steps)
+                for k, v in self.stat.iteritems():
+                    self.stat[k] = array(v[:(steps / self.interval)])
                 cache.save(self) # now this case is present in cache!
                 print "Data saved in file"
             else:
