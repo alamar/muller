@@ -42,6 +42,7 @@ public:
     void uneven_division_from(Organism * parent);
     int  change_ploidy(int Xnew);
     void replicate_from(Organism * donor); // replication according to genetic program
+    void divide_to(Organism * offspring); // binary division - offsprings will be in this and offspring
     
     Organism(int _G, real _B, real _fb, real _M, real _Mmut, real _T, real _Tmut, bool _Ttransform, real _C, int _X, bool _even, bool _constantX, real _Binitial, std::default_random_engine * _generator);
     ~Organism();
@@ -80,7 +81,9 @@ public:
     Organism ** offsprings; // temporary population
     
     void swap_pop(); // swap pop and offsprings
-    void select();
+    void select(); // roulette algorithm - selection and replication combined
+    void divide(); // binary division
+    void select_half(); // selection of half of population (each organism may be selected only once)
     void mutate();
     void transform();
     

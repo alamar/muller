@@ -20,6 +20,65 @@ void World::select(){
     swap_pop();
 }
 
+
+void World::select_half() { 
+    // selection of half of population by roulette algorithm
+    // each organism may be selected only once
+    // population is assumed to be in pop+offsprings, chosen ones will be in pop
+    bool * chosen = new bool [N * 2];
+    for(int i = 0; i < N * 2; i++) chosen [i] = false;
+    // select_n_from (N, N * 2, chosen, generator);
+    
+    real total = 0;
+    std::vector <real> roulette(N * 2);
+    for(int i = 0; i < N; i++){
+        total += pop[i]->F;
+        roulette[i] = total;
+    }
+    for(int i = 0; i < N; i++){
+        total += offsprings[i]->F;
+        roulette[i + N] = total;
+    }
+    // cout << "Fitness calculated" << endl;
+    // roulette is now consists of sums of fitnesses of pop concatenated with offsprings
+    // so we choose half of total population
+    int Nnew = 0;
+    vector <real>::iterator pos;
+    std::uniform_real_distribution<real> random_roll(0, total);
+    while (Nnew < N) {
+        pos = lower_bound(roulette.begin(), roulette.end(), random_roll(generator));
+        if (!(chosen [pos - roulette.begin()])) {
+            chosen [pos - roulette.begin()] = true;
+            Nnew += 1;
+        }
+    }
+    // cout << "Numbers selected " << Nnew << endl;
+    
+    // and gather all chosen ones into pop
+    // int swap_n = 0; // for debug purposes
+    int j = 0; // index of member of offsprings to be interchanged
+    for(int i = 0; i < N; i++) if (!(chosen [i])) {
+        while (!(chosen [j + N])) j += 1;
+        // cout << i << " " << j << endl;
+        swap (pop[i], offsprings[j]);
+        // Organism * t = pop[i];
+        // pop[i] = offsprings[j];
+        // offsprings[j] = t;
+        j += 1;
+        // swap_n += 1;
+    }
+    // cout << "Swaps: " << swap_n << endl;
+    delete chosen;
+}
+
+
+void World::divide() { // binary division, offsprings will be both in pop and offsprings
+    for (int i = 0; i < N; i++) {
+        pop[i] -> divide_to (offsprings[i]);
+    }
+}
+
+
 void World::mutate(){ // mutate pop[]
     for (int i = 0; i < N; i++){
         pop[i]->mutate();
@@ -31,8 +90,10 @@ void World::transform(){ // transform pop[]
         offsprings[i]->copy_from(pop[i]);
     }
     
+    // shuffling for better randomness
+    shuffle(&offsprings[0], &offsprings[N], generator);
+    
     // reciprocal transformation in pairs
-    // assuming organisms are shuffled good enough by selection process!
     // if population size is odd then the last organism is alone!
     for (int i = 0; i < N-1; i += 2){
         offsprings[i]->transform(pop[i+1]);
@@ -42,7 +103,9 @@ void World::transform(){ // transform pop[]
 }
 
 void World::step(){
-    select();
+    divide();
+    select_half();
+    // select();
     mutate();
     transform();
     time += 1;

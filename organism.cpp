@@ -123,7 +123,7 @@ void Organism::uneven_division_from(Organism * parent) {
 }
 
 
-void Organism::copy_from(Organism * donor){
+void Organism::copy_from(Organism * donor) {
     
     // for(int i = 0; i < G; i++){
         // genes[i] = donor->genes[i];
@@ -153,7 +153,7 @@ void Organism::copy_from(Organism * donor){
 };
 
 
-void Organism::replicate_from(Organism * donor){
+void Organism::replicate_from(Organism * donor) {
     
     if (donor->even) {
         copy_from(donor);
@@ -177,7 +177,50 @@ void Organism::replicate_from(Organism * donor){
     
 };
 
-void Organism::calc_fitness(){
+
+void Organism::divide_to(Organism * offspring) {
+    // binary division - offsprings will be in this and offspring
+    offspring -> copy_from (this); // even division (or preparation to amitosis)
+    
+    if (!even) { // uneven division
+        int X2 = X * 2;
+        bool ** chr2 = new bool * [X2]; // double set of chromosomes
+        // we have one copy of chromosomes in this and one in offspring,
+        // so we put they together in chr2 in order to distribute unevenly
+        for (int x = 0; x < X; x++) {
+            chr2 [x * 2] = chromosomes [x];
+            chr2 [x * 2 + 1] = offspring -> chromosomes [x];
+        }
+        
+        int Xnew = X;
+        if (!constantX) {
+            Xnew = std::binomial_distribution<int>(X2, 0.5)(*generator);
+            if (Xnew < 1) Xnew = 1;
+            if (Xnew >= X2) Xnew = X2 - 1;
+        }
+        bool * chromosomes_replicated = new bool[X2];
+        select_n_from(Xnew, X2, chromosomes_replicated, generator);
+        
+        X = 0;
+        offspring -> X = 0;
+        for (int from = 0; from < X2; from++) {
+            if (chromosomes_replicated[from]) {
+                offspring -> chromosomes[offspring -> X] = chr2 [from];
+                offspring -> X += 1;
+            } else {
+                chromosomes[X] = chr2 [from];
+                X += 1;
+            }
+        }
+        delete chr2;
+        delete chromosomes_replicated;
+        calc_fitness();
+        offspring -> calc_fitness();
+    }
+}
+
+
+void Organism::calc_fitness() {
     
     E = 0;
     EE = 0;
@@ -214,7 +257,7 @@ Organism::Organism(int _G, real _B, real _fb, real _M, real _Mmut, real _T, real
     generator = _generator;
     
     good_genes = new int[G];
-    chromosomes = new bool * [G];
+    chromosomes = new bool * [MAX_CHROMOSOMES];
     for(int x = 0; x < X; x++) {
         chromosomes[x] = new bool [G];
     }

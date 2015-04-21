@@ -62,7 +62,7 @@ def int_to_bools(i, length = 0):
     return o
 
 def replication_test(world, steps, even = False, constantX = False):
-    """test for uneven division (amitosis) with constant or variable number of chromosomes"""
+    """test for uneven division (amitosis) with constant or variable number of chromosomes via replicate_from() function"""
     a = world[0]
     o = world.offsprings[0]
     X = a.X
@@ -84,6 +84,31 @@ def replication_test(world, steps, even = False, constantX = False):
         a = o
         o = t
         print ""
+
+def division_test(world, steps = 1):
+    """test for binary division via divide_to() function, there should be exactly two chromosomes with the same number in genomes of two offsprings"""
+    a = world[0]
+    o = world.offsprings[0]
+    X = a.X
+    G = a.G
+    print "Initial number of chromosomes X = ", X
+    for i in xrange(steps):
+        for x in xrange(a.X):
+            xb = int_to_bools(x, G)
+            for j in xrange(G):
+                a.chromosomes[x][j] = xb[j]
+        a.divide_to(o)
+        print "First offspring has", a.X, "chromosomes: ",
+        for x in xrange(a.X):
+            xl = [a.chromosomes[x][j] for j in xrange(G)]
+            print bools_to_int(xl),
+        print ""
+        print "Second offspring has", o.X, " chromosomes: ",
+        for x in xrange(o.X):
+            xl = [o.chromosomes[x][j] for j in xrange(G)]
+            print bools_to_int(xl),
+        print ""
+
 
 def replication_alloc_test(world, steps, even = False, constantX = False):
     a = world[0]
@@ -156,6 +181,8 @@ def uneven_test(world, steps = 1):
                 if xo != xa:
                     print "Step ", t, ", organism ", i, ", chromosome ", x, "is not ", xa, " but ", xo
         world.swap_pop()
+
+    
 
 
 def selection_test(world, steps):
