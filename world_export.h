@@ -20,6 +20,7 @@ public:
     int X; // number of chromosomes
     bool even; // even division (mitosis) or uneven (amitosis)
     bool constantX; // keep number of chromosomes constant in uneven division (in mitosis X is always constant)
+    // bool binary; // exact binary division or construction of random number of independent offsprings
 
     real B; // probability of beneficial mutation
     real fb; // benefit from one mutation
@@ -65,6 +66,7 @@ public:
     int X; // number of chromosomes
     bool even; // even division (mitosis) or uneven (amitosis)
     bool constantX; // keep number of chromosomes constant in uneven division (in mitosis X is always constant)
+    bool binary; // exact binary division or construction of random number of independent offsprings
     
     real B; // probability of beneficial mutation
     real fb; // benefit from one mutation
@@ -91,7 +93,7 @@ public:
     void run(int steps, int interval);
     
     // void init(int _N, int _G, real _B, real _fb, real _M, real _Mmut, real _T, real _Tmut);
-    World(int N, int G, real B, real fb, real M, real Mmut, real T, real Tmut, bool Ttransform, real C, int _X, bool _even, bool _constantX, real _Binitial, long long int seed);
+    World(int N, int G, real B, real fb, real M, real Mmut, real T, real Tmut, bool Ttransform, real C, int _X, bool _even, bool _constantX, bool _binary, real _Binitial, long long int seed);
     ~World();
     
     // statistics

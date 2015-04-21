@@ -86,12 +86,12 @@ void World::mutate(){ // mutate pop[]
 }
 
 void World::transform(){ // transform pop[]
+    // shuffling for better randomness
+    shuffle(&pop[0], &pop[N], generator);
+    
     for (int i = 0; i < N; i++){
         offsprings[i]->copy_from(pop[i]);
     }
-    
-    // shuffling for better randomness
-    shuffle(&offsprings[0], &offsprings[N], generator);
     
     // reciprocal transformation in pairs
     // if population size is odd then the last organism is alone!
@@ -103,9 +103,14 @@ void World::transform(){ // transform pop[]
 }
 
 void World::step(){
-    divide();
-    select_half();
-    // select();
+    if (binary) {
+        divide();
+        select_half();
+        // cout << "b";
+    } else {
+        select();
+        // cout << "a";
+    }
     mutate();
     transform();
     time += 1;
@@ -221,7 +226,7 @@ void World::write_header(){
     "\n";
 }
 
-World::World(int _N, int _G, real _B, real _fb, real _M, real _Mmut, real _T, real _Tmut, bool _Ttransform, real _C, int _X, bool _even, bool _constantX, real _Binitial, long long int _seed){
+World::World(int _N, int _G, real _B, real _fb, real _M, real _Mmut, real _T, real _Tmut, bool _Ttransform, real _C, int _X, bool _even, bool _constantX, bool _binary, real _Binitial, long long int _seed){
     
     N = _N;
     G = _G;
@@ -236,6 +241,7 @@ World::World(int _N, int _G, real _B, real _fb, real _M, real _Mmut, real _T, re
     C = _C;
     even = _even;
     constantX = _constantX;
+    binary = _binary;
     Binitial = _Binitial;
     
     time = 0;

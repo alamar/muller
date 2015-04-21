@@ -34,14 +34,14 @@ import muller
 # 
 # 
 
-default_params = {"steps" : 200, "N" : 100, "G" : 100, "M" : 0.015, "B" : 0.1, "fb" : 0.05, "T" : 0., "Tmut" : 0., "Mmut" : 0., "Ttransform" : 1., "C" : 0., "X" : 1, "even": True, "constantX": True, "Binitial" : -1., "interval" : 1, "seed" : -1}
+default_params = {"steps" : 200, "N" : 100, "G" : 100, "M" : 0.015, "B" : 0.1, "fb" : 0.05, "T" : 0., "Tmut" : 0., "Mmut" : 0., "Ttransform" : 1., "C" : 0., "X" : 1, "even": True, "constantX": True, "binary": True, "Binitial" : -1., "interval" : 1, "seed" : -1}
         #, "verbose" : False}
 
 # extra_param_names = ["steps", "interval", "verbose"] # params that are not params of the model so should not be passed into model initialization
 
-swigworld_param_names = ["N", "G", "B", "fb", "M", "Mmut", "T", "Tmut", "Ttransform", "C", "X", "even", "constantX", "Binitial", "seed"] # parameters for C++/swig World object initialization - unfortunately swig does not mention parameter names
+swigworld_param_names = ["N", "G", "B", "fb", "M", "Mmut", "T", "Tmut", "Ttransform", "C", "X", "even", "constantX", "binary", "Binitial", "seed"] # parameters for C++/swig World object initialization - unfortunately swig does not mention parameter names
 
-exe_param_names = ["N", "G", "B", "fb", "M", "Mmut", "T", "Tmut", "Ttransform", "C", "Binitial", "interval", "seed"] # parameters needed for running c++ executable
+# exe_param_names = ["N", "G", "B", "fb", "M", "Mmut", "T", "Tmut", "Ttransform", "C", "Binitial", "interval", "seed"] # parameters needed for running c++ executable
 
 def STATVARS(*names):
     o = []
