@@ -185,11 +185,13 @@ def uneven_test(world, steps = 1):
     
 
 
-def selection_test(world, steps):
-    """Test for selection process. Returns fitnesses, numbers of children, theoretical numbers of children. Example usage:
+def selection_test_old(world, steps):
+    """Test for selection process. Returns fitnesses, numbers of children, theoretical numbers of children.
+    This version is for binary = False! Otherwise use selection_test().
+    Example usage:
 
-        p0 = batch.population(N = 1000, G = 100)
-        f, c, p = batch.selection_test(w, 10000); figure(); plot(f, c, "."); plot(f, p); show()
+        p0 = batch.population_raw(N = 1000, G = 100)
+        f, c, p = batch.selection_test(p0.model, 10000); figure(); plot(f, c, "."); plot(f, p); show()
         
         Passed ok (as of 17.03.2015)"""
     f = [o.F for o in world] # fitnesses
@@ -205,6 +207,35 @@ def selection_test(world, steps):
     k = steps * 1. / average(f)
     children_pred = map(lambda f: f * k, f) # theoretical number of children
     return f, children, children_pred
+
+def selection_test(world, steps, bias = 0):
+    """Test for selection process. Returns fitnesses, numbers of children, theoretical numbers of children.
+    This version is for binary = True! Otherwise use selection_test_old().
+    Example usage:
+
+        p0 = batch.population_raw(N = 1000, G = 100)
+        f, c, p = batch.selection_test(p0.model, 10000); figure(); plot(f, c, "."); plot(f, p); show()
+        
+        """
+    children = [0 for o in world] + [0 for i in xrange(len(world))]
+    fitnesses = sorted([bias + rand() for i in xrange(2 * len(world))])
+    for i in xrange(steps):
+        for o in world:
+            o.F = rand()
+        for i in xrange(len(world)):
+            world.offsprings[i].F = rand()
+        for i in xrange(len(world)):
+            world[i].E = i # dummy number to identify ancestors
+            world.offsprings[i].E = i + len(world) # dummy number to identify ancestors
+            world[i].F = fitnesses[i]
+            world.offsprings[i].F = fitnesses[i + len(world)]
+        world.select_half()
+        for i in xrange(len(world)):
+            children[world[i].E] += 1
+    
+    k = steps * 0.5 / average(fitnesses)
+    children_pred = map(lambda f: f * k, fitnesses) # theoretical number of children
+    return fitnesses, children, children_pred
 
 
 def mutation_test(world, steps, B = None):

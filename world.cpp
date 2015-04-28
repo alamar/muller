@@ -25,21 +25,34 @@ void World::select_half() {
     // selection of half of population by roulette algorithm
     // each organism may be selected only once
     // population is assumed to be in pop+offsprings, chosen ones will be in pop
+    // WARNING: if organism's fitness is more than two average fitnesses, it will be treated as two average fitnesses cos in such process it's not impossible to increase number of organisms
     bool * chosen = new bool [N * 2];
     for(int i = 0; i < N * 2; i++) chosen [i] = false;
     // select_n_from (N, N * 2, chosen, generator);
     
-    real total = 0;
+    real total_fitness = 0;
     std::vector <real> roulette(N * 2);
     for(int i = 0; i < N; i++){
-        total += pop[i]->F;
+        total_fitness += pop[i]->F;
+        total_fitness += offsprings[i]->F;
+    }
+    real max_f = total_fitness / N;
+    real total = 0; // total normalized fitness
+    real f = 0;
+    for(int i = 0; i < N * 2; i++){
+        if (i < N)
+            f = pop[i]->F;
+        else
+            f = offsprings[i - N]->F;
+        // total += f / (1 - pow(1 - f / total_fitness, N));
+        // total += 1 - pow(1 - f / total_fitness, 1. / N);
+        if (f >= max_f)
+            total += 1;
+        else
+            total += 1 - pow(1 - f * N / total_fitness, 1. / N);
         roulette[i] = total;
     }
-    for(int i = 0; i < N; i++){
-        total += offsprings[i]->F;
-        roulette[i + N] = total;
-    }
-    // cout << "Fitness calculated" << endl;
+    // cout << "Total fitness " << total_fitness << ", total normalized fitness: " << total << endl;
     // roulette is now consists of sums of fitnesses of pop concatenated with offsprings
     // so we choose half of total population
     int Nnew = 0;

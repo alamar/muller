@@ -34,7 +34,7 @@ import muller
 # 
 # 
 
-default_params = {"steps" : 200, "N" : 100, "G" : 100, "M" : 0.015, "B" : 0.1, "fb" : 0.05, "T" : 0., "Tmut" : 0., "Mmut" : 0., "Ttransform" : 1., "C" : 0., "X" : 1, "even": True, "constantX": True, "binary": True, "Binitial" : -1., "interval" : 1, "seed" : -1}
+default_params = {"steps" : 200, "N" : 100, "G" : 100, "M" : 0.015, "B" : 0.1, "fb" : 0.05, "T" : 0., "Tmut" : 0., "Mmut" : 0., "Ttransform" : 1., "C" : 0., "X" : 1, "even": True, "constantX": True, "binary": False, "Binitial" : -1., "interval" : 1, "seed" : -1}
         #, "verbose" : False}
 
 # extra_param_names = ["steps", "interval", "verbose"] # params that are not params of the model so should not be passed into model initialization
@@ -58,7 +58,7 @@ def chromosome_to_list(o, x):
     """Returns x-th chromosome of organism o as list. Direct iteration over chromosome leads to segmentation fault due to no range checking!"""
     return [int(o.chromosomes[x][g]) for g in xrange(o.G)]
 
-class population_swig:
+class population_raw:
     
     def __init__(self, **kwargs):
         # filling attributes at once instead of mentioning each one
@@ -207,6 +207,7 @@ class Cache:
         
     def select(self, default = True, filter_lambda = None, **kwargs):
         """Returns all cases satisfying lambda and having given parameters (and equal or more than given length).
+        Always returns only one trajectory with each combination of parameters (and possible different length).
         If default = True then omitted params will be at default values, otherwise it will filter only by mentioned parameters.
         If you get too few results - try default = False !
         
@@ -225,17 +226,45 @@ class Cache:
         params.update(kwargs)
         
         steps = params.pop("steps")
+        if kwargs.has_key("steps"):
+            kwargs.pop("steps")
         # print "Seed:", params["seed"]
         if params["Binitial"] < 0:
             params["Binitial"] = params["B"]
+            kwargs["Binitial"] = params["B"]
         if params["seed"] < 0: # if seed < 0 then we can choose trajectory with any seed
             seed = params.pop("seed")
+            if kwargs.has_key("steps"):
+                kwargs.pop("steps")
         
         found = self.dataindex
+        for k, v in kwargs.iteritems():
+            # print k, v, len(found)
+            found = filter(lambda a: a["params"][k] == v if a.has_key(k) else False, found) # if trajectory does not have explicitly mentioned parameter, we do not consider it as acceptable
         for k, v in params.iteritems():
             # print k, v, len(found)
-            found = filter(lambda a: a["params"][k] == v, found)
+            found = filter(lambda a: a["params"][k] == v if a.has_key(k) else True, found) # if trajectory does not have parameter present in default_params but omitted in kwargs, we consider it as acceptable
         found = filter(lambda a: a["params"]["steps"] >= steps, found)
+        
+        # removing trajectories with duplicate parameters (including seed, but except steps)
+        # TODO: needs to be tested!!
+        # runs_by_seed = {r["params"]["seed"]: r for r in found}
+        runs_by_seed = {}
+        for r in found:
+            s = r["params"]["seed"]
+            if runs_by_seed.has_key(s):
+                lst = runs_by_seed[s]
+                p = copy(r["params"])
+                p.pop("steps")
+                for a in lst:
+                    pp = copy(r["params"])
+                    pp.pop("steps")
+                    if p == pp:
+                        lst.remove(a)
+                lst.append(r)
+            else:
+                runs_by_seed[s] = [r]
+        found = reduce(lambda a, b: a + b, runs_by_seed.values(), [])
         return found
         
         
@@ -285,7 +314,7 @@ class Cache:
 
 cache = Cache()
 
-class population_cached(population_swig):
+class population_cached(population_raw):
     
     def __init__(self, filename = None, new = False, **kwargs):
         """This object is needed to obtain trajectory of model with specified parameters. It tries to load it from disk or, if it is impossible, prepares model to run.
@@ -313,14 +342,14 @@ class population_cached(population_swig):
                 setattr(self, k, v)
             print "Loaded data from file"
         else:
-            population_swig.__init__(self, **kwargs)
+            population_raw.__init__(self, **kwargs)
             calc_units = self.N * self.G * self.X * self.steps
             print "Simulation will be done: ", calc_units, "calculation units or about ", 5e-8 * calc_units, " seconds"
         
     
     def run(self, steps = None):
         if hasattr(self, "model"): # if no cache available
-            population_swig.run(self, steps)
+            population_raw.run(self, steps)
             cache.save(self) # now this case is present in cache!
             print "Data saved in file"
             for k, v in self.stat.iteritems():
@@ -330,8 +359,8 @@ class population_cached(population_swig):
             if steps > self.params["steps"]:
                 print "WARNING!! Requested length of simulation exceeds length of statistics in file!"
                 self.params["steps"] = steps
-                population_swig.__init__(self, **self.params)
-                population_swig.run(self, steps)
+                population_raw.__init__(self, **self.params)
+                population_raw.run(self, steps)
                 for k, v in self.stat.iteritems():
                     self.stat[k] = array(v[:(steps / self.interval)])
                 cache.save(self) # now this case is present in cache!
@@ -349,12 +378,11 @@ def many_runs(run_n = 1, **kwargs):
     """Returns specified quantity of trajectories with the same parameters (except random seed). If there are not enough saved trajectories, returns all available and remaining as population objects to run.
     
     WARNING: if there are multiple trajectories with same seed, they all will be loaded (and so there will be duplicates in data set)!"""
-    # TODO: solve warning
     found = cache.select(**kwargs)
     data = map(lambda a: population_cached(filename = a["file"]), found[:run_n])
     models = [population_cached(new = True, **kwargs) for i in xrange(run_n - len(found))]
     return data + models
 
 
-# population = population_swig
+population_swig = population_raw
 population = population_cached
