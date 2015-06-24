@@ -19,7 +19,7 @@ public:
     int G; // number of genes
     int X; // number of chromosomes
     bool even; // even division (mitosis) or uneven (amitosis)
-    bool constantX; // keep number of chromosomes constant in uneven division (in mitosis X is always constant)
+    real constantX; // keep number of chromosomes constant in uneven division (in mitosis X is always constant)
     // bool binary; // exact binary division or construction of random number of independent offsprings
 
     real B; // probability of beneficial mutation
@@ -45,7 +45,7 @@ public:
     void replicate_from(Organism * donor); // replication according to genetic program
     void divide_to(Organism * offspring); // binary division - offsprings will be in this and offspring
     
-    Organism(int _G, real _B, real _fb, real _M, real _Mmut, real _T, real _Tmut, bool _Ttransform, real _C, int _X, bool _even, bool _constantX, real _Binitial, std::default_random_engine * _generator);
+    Organism(int _G, real _B, real _fb, real _M, real _Mmut, real _T, real _Tmut, bool _Ttransform, real _C, int _X, bool _even, real _constantX, real _Binitial, std::default_random_engine * _generator);
     ~Organism();
 };
 
@@ -65,7 +65,7 @@ public:
     int G; // number of genes
     int X; // number of chromosomes
     bool even; // even division (mitosis) or uneven (amitosis)
-    bool constantX; // keep number of chromosomes constant in uneven division (in mitosis X is always constant)
+    real constantX; // keep number of chromosomes constant in uneven division (in mitosis X is always constant)
     bool binary; // exact binary division or construction of random number of independent offsprings
     
     real B; // probability of beneficial mutation
@@ -93,14 +93,14 @@ public:
     void run(int steps, int interval);
     
     // void init(int _N, int _G, real _B, real _fb, real _M, real _Mmut, real _T, real _Tmut);
-    World(int N, int G, real B, real fb, real M, real Mmut, real T, real Tmut, bool Ttransform, real C, int _X, bool _even, bool _constantX, bool _binary, real _Binitial, long long int seed);
+    World(int N, int G, real B, real fb, real M, real Mmut, real T, real Tmut, bool Ttransform, real C, int _X, bool _even, real _constantX, bool _binary, real _Binitial, long long int seed);
     ~World();
     
     // statistics
     
     int time;
     
-// define somethong like this: real Eavg; real Estd; real Emin; real Emax;
+// define something like this: real Eavg; real Estd; real Emin; real Emax;
 #define STATVARS(name) real name##avg; real name##std; real name##min; real name##max;
     
     STATVARS(E); // part of good genes by organism

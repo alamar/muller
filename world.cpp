@@ -239,7 +239,7 @@ void World::write_header(){
     "\n";
 }
 
-World::World(int _N, int _G, real _B, real _fb, real _M, real _Mmut, real _T, real _Tmut, bool _Ttransform, real _C, int _X, bool _even, bool _constantX, bool _binary, real _Binitial, long long int _seed){
+World::World(int _N, int _G, real _B, real _fb, real _M, real _Mmut, real _T, real _Tmut, bool _Ttransform, real _C, int _X, bool _even, real _constantX, bool _binary, real _Binitial, long long int _seed){
     
     N = _N;
     G = _G;

@@ -85,10 +85,13 @@ int Organism::change_ploidy(int Xnew) {
     if (Xnew != X) {
         if (Xnew > X) {
             if (Xnew > MAX_CHROMOSOMES) Xnew = MAX_CHROMOSOMES;
-            for(int x = X; x < Xnew; x++)
+            for(int x = X; x < Xnew; x++){
                 chromosomes[x] = new bool [G];
+                if (X > 1)
+                    copy(chromosomes[0], chromosomes[0] + G, chromosomes[x]);
+            }
         } else {
-            if (Xnew < 1) Xnew = 1;
+            //if (Xnew < 1) Xnew = 1;
             for(int x = Xnew; x < X; x++)
                 delete chromosomes[x];
         }
@@ -101,7 +104,8 @@ void Organism::uneven_division_from(Organism * parent) {
     int Xold = parent -> X;
     int Xnew = parent -> X;
     bool * chromosomes_replicated = new bool[Xold * 2]; // firstly genome is replicated, then approximately half of chromosomes are chosen
-    if ( ! (parent -> constantX)) {
+    //if ( ! (parent -> constantX)) {
+    if ( std::bernoulli_distribution (1 - parent -> constantX) (*generator) ) {
         Xnew = std::binomial_distribution<int>(Xold * 2, 0.5)(*generator);
     }
     Xnew = change_ploidy(Xnew);
@@ -193,7 +197,8 @@ void Organism::divide_to(Organism * offspring) {
         }
         
         int Xnew = X;
-        if (!constantX) {
+        // if (!constantX) {
+        if ( std::bernoulli_distribution (1 - constantX) (*generator) ) {
             Xnew = std::binomial_distribution<int>(X2, 0.5)(*generator);
             if (Xnew < 1) Xnew = 1;
             if (Xnew >= X2) Xnew = X2 - 1;
@@ -224,6 +229,10 @@ void Organism::calc_fitness() {
     
     E = 0;
     EE = 0;
+    if (X <= 0) {
+        F = 0;
+        return;
+    }
     for(int i = 0; i < G; i++) {
         good_genes[i] = 0;
         int g = 0; // good_genes[i]
@@ -238,7 +247,7 @@ void Organism::calc_fitness() {
     if (T > 0.) F = F * (1 - C);
 };
 
-Organism::Organism(int _G, real _B, real _fb, real _M, real _Mmut, real _T, real _Tmut, bool _Ttransform, real _C, int _X, bool _even, bool _constantX, real _Binitial, std::default_random_engine * _generator){
+Organism::Organism(int _G, real _B, real _fb, real _M, real _Mmut, real _T, real _Tmut, bool _Ttransform, real _C, int _X, bool _even, real _constantX, real _Binitial, std::default_random_engine * _generator){
     
     G = _G;
     X = _X;
