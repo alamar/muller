@@ -225,25 +225,31 @@ class Cache:
             params = copy(default_params)
         params.update(kwargs)
         
-        steps = params.pop("steps")
-        if kwargs.has_key("steps"):
-            kwargs.pop("steps")
-        # print "Seed:", params["seed"]
-        if params["Binitial"] < 0:
-            params["Binitial"] = params["B"]
-            kwargs["Binitial"] = params["B"]
-        if params["seed"] < 0: # if seed < 0 then we can choose trajectory with any seed
-            seed = params.pop("seed")
+        if default == True:
+            steps = params.pop("steps")
+        else:
             if kwargs.has_key("steps"):
-                kwargs.pop("steps")
+                kwargs.pop("steps") # we do not want to search exact value of simulation time, instead we will select all trajectories that are long enough later
+                steps = params.pop("steps")
+            else:
+                steps = 0
+        # print "Seed:", params["seed"]
+        if default == True:
+            if params["Binitial"] < 0:
+                params["Binitial"] = params["B"] # it is stupid but imminent
+                kwargs["Binitial"] = params["B"]
+            if params["seed"] < 0: # if seed < 0 then we can choose trajectory with any seed
+                seed = params.pop("seed")
+                if kwargs.has_key("seed"):
+                    kwargs.pop("seed")
         
         found = self.dataindex
         for k, v in kwargs.iteritems():
             # print k, v, len(found)
-            found = filter(lambda a: a["params"][k] == v if a.has_key(k) else False, found) # if trajectory does not have explicitly mentioned parameter, we do not consider it as acceptable
+            found = filter(lambda a: a["params"][k] == v if a["params"].has_key(k) else False, found) # if trajectory does not have explicitly mentioned parameter, we do not consider it as acceptable
         for k, v in params.iteritems():
             # print k, v, len(found)
-            found = filter(lambda a: a["params"][k] == v if a.has_key(k) else True, found) # if trajectory does not have parameter present in default_params but omitted in kwargs, we consider it as acceptable
+            found = filter(lambda a: a["params"][k] == v if a["params"].has_key(k) else True, found) # if trajectory does not have parameter present in default_params but omitted in kwargs, we consider it as acceptable
         found = filter(lambda a: a["params"]["steps"] >= steps, found)
         
         # removing trajectories with duplicate parameters (including seed, but except steps)

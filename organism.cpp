@@ -88,10 +88,10 @@ int Organism::change_ploidy(int Xnew) {
             for(int x = X; x < Xnew; x++){
                 chromosomes[x] = new bool [G];
                 if (X > 1)
-                    copy(chromosomes[0], chromosomes[0] + G, chromosomes[x]);
+                    copy(chromosomes[x - X], chromosomes[x - X] + G, chromosomes[x]); // new chromosomes are copies of Xnew - X first old chromosomes
             }
         } else {
-            //if (Xnew < 1) Xnew = 1;
+            //if (Xnew < 1) Xnew = 1; // we comment it so nulliploids are allowed
             for(int x = Xnew; x < X; x++)
                 delete chromosomes[x];
         }
@@ -200,8 +200,8 @@ void Organism::divide_to(Organism * offspring) {
         // if (!constantX) {
         if ( std::bernoulli_distribution (1 - constantX) (*generator) ) {
             Xnew = std::binomial_distribution<int>(X2, 0.5)(*generator);
-            if (Xnew < 1) Xnew = 1;
-            if (Xnew >= X2) Xnew = X2 - 1;
+            // if (Xnew < 1) Xnew = 1; // we comment it so nulliploids are allowed
+            // if (Xnew >= X2) Xnew = X2 - 1;
         }
         bool * chromosomes_replicated = new bool[X2];
         select_n_from(Xnew, X2, chromosomes_replicated, generator);
