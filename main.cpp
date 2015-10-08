@@ -16,8 +16,8 @@ int main(int argc, char* argv[]){
         
         int Ttransform = (argc >= 11) ? atoi(argv[10]): 1;
         real C = (argc >= 12) ? atof(argv[11]): 1;
-        real Binitial = ((argc >= 13) & (atof(argv[12]) >= 0.)) ? atof(argv[12]): B;
-        int interval = (argc >= 14) ? atof(argv[13]) : 1;
+        real Binitial = ((argc >= 13) & (atof(argv[12]) >= 0.)) ? atof(argv[12]): 1.0;
+        int interval = (argc >= 14) ? atof(argv[13]) : (1 + (steps / 20));
         long long int seed = (argc >= 15) ? atof(argv[14]) : -1;
         
         if (seed < 0){ // setting random seed from current time if seed < 0

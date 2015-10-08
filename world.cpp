@@ -216,26 +216,28 @@ void World::calc_stat(){
 
 void World::write_stat(){
     calc_stat();
-    cout << time << " ";
-    cout << Eavg << " " << Estd << " " << Emin << " " << Emax << " ";
-    cout << Favg << " " << Fstd << " " << Fmin << " " << Fmax << " ";
-    cout << Mavg << " " << Mstd << " " << Mmin << " " << Mmax << " ";
-    cout << Tavg << " " << Tstd << " " << Tmin << " " << Tmax << " ";
-    cout << Tplus << " ";
-    cout <<EGavg << " " <<EGstd << " " <<EGmin << " " <<EGmax << " ";
-    cout << endl;
+    printf("%d\t%7.5lf\t%7.5lf\t%7.5lf\t%7.5lf\t%7.5lf\t%7.5lf\t%7.5lf\t%7.5lf\t%7.5lf\t%7.5lf\t%7.5lf\t%7.5lf\t%7.5lf\t%7.5lf\t%7.5lf\t%7.5lf\t%7.5lf\t%7.5lf\t%7.5lf\t%7.5lf\t%7.5lf\n",
+            time, Eavg, Estd, Emin, Emax, Favg, Fstd, Fmin, Fmax, Mavg, Mstd, Mmin, Mmax, Tavg, Tstd, Tmin, Tmax, Tplus, EGavg, EGstd, EGmin, EGmax);
+/*  cout << time << "\t";
+    cout << Eavg << "\t" << Estd << "\t" << Emin << "\t" << Emax << "\t";
+    cout << Favg << "\t" << Fstd << "\t" << Fmin << "\t" << Fmax << "\t";
+    cout << Mavg << "\t" << Mstd << "\t" << Mmin << "\t" << Mmax << "\t";
+    cout << Tavg << "\t" << Tstd << "\t" << Tmin << "\t" << Tmax << "\t";
+    cout << Tplus << "\t";
+    cout << EGavg << "\t" << EGstd << "\t" << EGmin << "\t" << EGmax;
+    cout << endl;*/
 }
 
 void World::write_header(){
     cout << "\n"
     "Statistics begin\n"
-    "time "
-    "Eavg  Estd  Emin  Emax  "
-    "Favg     Fstd     Fmin     Fmax     "
-    "Mavg     Mstd     Mmin     Mmax     "
-    "Tavg     Tstd     Tmin     Tmax     "
-    "Tplus "
-    "EGavg  EGstd  EGmin  EGmax  "
+    "time\t"
+    "Eavg\tEstd\tEmin\tEmax\t"
+    "Favg\tFstd\tFmin\tFmax\t"
+    "Mavg\tMstd\tMmin\tMmax\t"
+    "Tavg\tTstd\tTmin\tTmax\t"
+    "Tplus\t"
+    "EGavg\tEGstd\tEGmin\tEGmax"
     "\n";
 }
 
