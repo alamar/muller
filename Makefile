@@ -2,15 +2,16 @@
 TARGET = muller
 #SOURCES=$(wildcard *.cpp)
 # SOURCES= main.cpp organism.cpp world.cpp
-SOURCES= organism.cpp world.cpp
-OBJECTS=$(SOURCES:%.cpp=%.o)
+SOURCES= organism.cpp world.cpp main.cpp
+OBJECTS= organism.o world.o
+MAINO=main.o
 
 SWIGFILE = $(TARGET).i
 PYWRAPCPP= $(TARGET)_wrap.cpp
 PYWRAPO=$(PYWRAPCPP:%.cpp=%.o)
 PYTARGET =_$(TARGET).so
 PYSOURCES= $(SOURCES) $(PYWRAPCPP)
-PYOBJECTS= $(PYSOURCES:%.cpp=%.o)
+PYOBJECTS= $(OBJECTS) $(PYRWAPO)
 
 
 # CXXFLAGS+= -O3
@@ -39,5 +40,8 @@ $(PYWRAPO): $(PYWRAPCPP)
 
 $(PYTARGET): $(PYOBJECTS) $(PYWRAPO)
 	$(CXX) -shared $(CXXFLAGS) -o $(PYTARGET) $(LDFLAGS) $(PYOBJECTS) $(LOADLIBES) $(LDLIBS)
+
+main: $(OBJECTS) $(MAINOBJECT)
+	$(CXX) $(CXXFLAGS) -o muller_main $(LDFLAGS) $(OBJECTS) $(MAINO) $(LOADLIBES) $(LDLIBS)
 
 .PHONY: all clean

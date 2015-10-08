@@ -46,8 +46,8 @@ int main(int argc, char* argv[]){
         cout << "Binitial - initial beneficial genes        " << Binitial << "\n";
         cout << "interval between statistics outputs        " << interval << "\n";
         cout << "seed - random seed                         " << seed << "\n";
-        
-        World w(N, G, B, fb, M, Mmut, T, Tmut, Ttransform, C, Binitial, seed);
+
+        World w(N, G, B, fb, M, Mmut, T, Tmut, Ttransform, C, 1, true, 1.0, false, Binitial, seed);
         
 //         w.calc_stat();
 //         cout << w.Favg << "\n";
