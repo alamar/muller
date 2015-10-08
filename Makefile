@@ -15,7 +15,7 @@ PYOBJECTS= $(OBJECTS) $(PYRWAPO)
 
 
 # CXXFLAGS+= -O3
-CXXFLAGS+= -std=c++11 -O3
+CXXFLAGS+= -g -std=c++11 -O3
 CXXFLAGS+= -fPIC -I/usr/include/python2.7
 #CFLAGS+=$(shell pkg-config --cflags libxslt sqlite3)
 #LDFLAGS+=$(shell pkg-config --libs ncurses)
@@ -31,7 +31,7 @@ $(TARGET): $(OBJECTS)
 	$(CXX) $(CXXFLAGS) -o $(TARGET) $(LDFLAGS) $(OBJECTS) $(LOADLIBES) $(LDLIBS)
 
 clean:
-	$(RM) $(PYOBJECTS) $(PYTARGET) $(TARGET) $(PYWRAPCPP)
+	$(RM) $(PYOBJECTS) $(PYTARGET) $(MAINO) $(TARGET) $(PYWRAPCPP)
 
 $(PYWRAPCPP): $(SWIGFILE)
 	swig -includeall -c++ -python -o $(PYWRAPCPP) $(SWIGFILE)
@@ -41,7 +41,7 @@ $(PYWRAPO): $(PYWRAPCPP)
 $(PYTARGET): $(PYOBJECTS) $(PYWRAPO)
 	$(CXX) -shared $(CXXFLAGS) -o $(PYTARGET) $(LDFLAGS) $(PYOBJECTS) $(LOADLIBES) $(LDLIBS)
 
-main: $(OBJECTS) $(MAINOBJECT)
-	$(CXX) $(CXXFLAGS) -o muller_main $(LDFLAGS) $(OBJECTS) $(MAINO) $(LOADLIBES) $(LDLIBS)
+main: $(OBJECTS) $(MAINO)
+	$(CXX) $(CXXFLAGS) -o $(TARGET) $(LDFLAGS) $(OBJECTS) $(MAINO) $(LOADLIBES) $(LDLIBS)
 
 .PHONY: all clean
