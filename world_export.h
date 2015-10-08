@@ -1,5 +1,7 @@
 // const int MAX_GENES = 100000;
 const int MAX_CHROMOSOMES = 100;
+const int STATS_COUNT = 21;
+
 
 typedef double real;
 // typedef float real;
@@ -100,6 +102,7 @@ public:
     
     int time;
     
+    real cached_stats[STATS_COUNT];
 // define something like this: real Eavg; real Estd; real Emin; real Emax;
 #define STATVARS(name) real name##avg; real name##std; real name##min; real name##max;
     

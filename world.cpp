@@ -216,16 +216,20 @@ void World::calc_stat(){
 
 void World::write_stat(){
     calc_stat();
-    printf("%d\t%7.5lf\t%7.5lf\t%7.5lf\t%7.5lf\t%7.5lf\t%7.5lf\t%7.5lf\t%7.5lf\t%7.5lf\t%7.5lf\t%7.5lf\t%7.5lf\t%7.5lf\t%7.5lf\t%7.5lf\t%7.5lf\t%7.5lf\t%7.5lf\t%7.5lf\t%7.5lf\t%7.5lf\n",
-            time, Eavg, Estd, Emin, Emax, Favg, Fstd, Fmin, Fmax, Mavg, Mstd, Mmin, Mmax, Tavg, Tstd, Tmin, Tmax, Tplus, EGavg, EGstd, EGmin, EGmax);
-/*  cout << time << "\t";
-    cout << Eavg << "\t" << Estd << "\t" << Emin << "\t" << Emax << "\t";
-    cout << Favg << "\t" << Fstd << "\t" << Fmin << "\t" << Fmax << "\t";
-    cout << Mavg << "\t" << Mstd << "\t" << Mmin << "\t" << Mmax << "\t";
-    cout << Tavg << "\t" << Tstd << "\t" << Tmin << "\t" << Tmax << "\t";
-    cout << Tplus << "\t";
-    cout << EGavg << "\t" << EGstd << "\t" << EGmin << "\t" << EGmax;
-    cout << endl;*/
+    real stats[STATS_COUNT] = {Eavg, Estd, Emin, Emax, Favg, Fstd, Fmin, Fmax, Mavg, Mstd, Mmin, Mmax, Tavg, Tstd, Tmin, Tmax, Tplus, EGavg, EGstd, EGmin, EGmax};
+    printf("%d", time);
+    for(int i = 0; i < STATS_COUNT; i++){
+        printf("\t");
+        if (stats[i] != cached_stats[i]) {
+            // You won't believe, there isn't actually any better way
+            char number[100];
+            snprintf(number, 100, "%.5g", (double) stats[i]);
+            number[7] = '\0';
+            printf("%s", number);
+            cached_stats[i] = stats[i];
+        }
+    }
+    printf("\n");
 }
 
 void World::write_header(){
@@ -267,6 +271,10 @@ World::World(int _N, int _G, real _B, real _fb, real _M, real _Mmut, real _T, re
     
     pop = new Organism * [N];
     offsprings = new Organism * [N];
+
+    for(int i = 0; i < STATS_COUNT; i++){
+        cached_stats[i] = 0.0;
+    }
     
     for(int i = 0; i < N; i++){
         pop[i] = new Organism(_G, _B, _fb, _M, _Mmut, _T, _Tmut, _Ttransform, _C, _X, _even, _constantX, _Binitial, &generator);

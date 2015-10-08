@@ -5,6 +5,7 @@ TARGET = muller
 SOURCES= organism.cpp world.cpp main.cpp
 OBJECTS= organism.o world.o
 MAINO=main.o
+HEADERS = $(wildcard *.h)
 
 SWIGFILE = $(TARGET).i
 PYWRAPCPP= $(TARGET)_wrap.cpp
@@ -25,7 +26,7 @@ LDFLAGS+= -g -pg
 # all: $(TARGET) $(PYTARGET)
 all: $(PYTARGET)
 
-$(OBJECTS): $(SOURCES)
+$(OBJECTS): $(SOURCES) $(HEADERS)
 
 $(TARGET): $(OBJECTS)
 	$(CXX) $(CXXFLAGS) -o $(TARGET) $(LDFLAGS) $(OBJECTS) $(LOADLIBES) $(LDLIBS)
